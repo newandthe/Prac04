@@ -30,38 +30,34 @@
 <br/>
 <!-- <p th:text="${bbsList.size()}"></p><p>bbsList.size</p> -->
 
+<!-- Hidden input 요소 추가 -->
+<input type="hidden" id="targetHidden" th:value="${searchparameter.target}" />
 
 
+<div class="border rounded p-3" style="width: 1500px;  height: 600px; margin: 0 auto;">
 
-<div class="border rounded p-3" style="width: 1500px; margin: 0 auto;">
 
+  <br/>
   <!-- 검색 및 정렬 -->
   <div class="row">
 
-    <div class="col-md-2" style="width: 120px;">
-      <select class="form-select" aria-label="Default select example" id="choice" onchange="getValue(this);" th:value="${choice}">
+    <div class="col-md-2" style="width: 150px;">
+      <select class="form-select" aria-label="Default select example" id="choice" onchange="getValue(this);" th:value="${searchparameter.choice}">
         <option value="recentorderby" th:selected="${choice=='recentorderby'}">최신순</option>
-        <option value="readorderby" th:selected="${choice=='readorderby'}">오래된순</option>
+        <option value="olderorderby" th:selected="${choice=='olderorderby'}">오래된순</option>
       </select>
     </div>
 
     <div class="col-md-10">
       <div class="input-group" style="float: right; margin-left: 250px;">
-        <ul class="dropdown-menu dropdown-menu-start">
-          <li><a class="dropdown-item" href="#">전체</a></li>
-          <li><a class="dropdown-item" href="#">제목</a></li>
-          <li><a class="dropdown-item" href="#">내용</a></li>
-          <li><a class="dropdown-item" href="#">파일 이름</a></li>
-          <li><a class="dropdown-item" href="#">파일 내용</a></li>
+        <ul class="dropdown-menu dropdown-menu-end" id="target" onchange="getValue(this);" th:value="${target}">
+          <li><a class="dropdown-item" onclick="setValue('getall')">전체</a></li>
+          <li><a class="dropdown-item" onclick="setValue('gettitle')">제목</a></li>
+          <li><a class="dropdown-item" onclick="setValue('getcontent')">내용</a></li>
+          <li><a class="dropdown-item" onclick="setValue('getfilename')">파일 이름</a></li>
+          <li><a class="dropdown-item" onclick="setValue('getfilecontent')">파일 내용</a></li>
         </ul>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="#">전체</a></li>
-          <li><a class="dropdown-item" href="#">제목</a></li>
-          <li><a class="dropdown-item" href="#">내용</a></li>
-          <li><a class="dropdown-item" href="#">파일 이름</a></li>
-          <li><a class="dropdown-item" href="#">파일 내용</a></li>
-        </ul>
-        <input type="text" class="form-control" aria-label="Text input with segmented dropdown button" id="searchparam" th:value="${search}">
+        <input type="text" class="form-control" aria-label="Text input with segmented dropdown button" id="searchparam" th:value="${searchparameter.search}">
         <button type="button" class="btn btn-outline-secondary" onclick="SearchOption()">검색</button>
         <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
           <span class="visually-hidden">Toggle Dropdown</span>
@@ -70,24 +66,147 @@
     </div>
 
   </div>
+  <br/>
+
+  <!-- 검색 결과물이 있는 경우에만 아래 출력 -->
+  <div th:if="${data.hits != null and not #lists.isEmpty(data.hits.hits)}">
+
+
+
+    <!-- 결과 내 재 검색 버튼 -->
+    <div class="form-check form-switch" style="display: flex; justify-content: flex-end; margin-right: 50px;">
+      <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" th:checked="${searchparameter.research}" onclick="updateReSearch()">
+      <span> </span>
+      <label class="form-check-label" for="flexSwitchCheckDefault">결과 내 재검색</label>
+    </div>
+
+
+
+    <br/><br/>
+
+
+    <h3>검색결과 : <span th:text="${data.hits.total.value}"></span> 건</h3>
+
+  <table class="table">
+    <thead class="table-dark">
+    <th>제목</th>
+    <th>카테고리</th>
+    <th>작성자</th>
+    <th>작성일</th>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${data.hits.hits}">
+      <td th:text="${item._source.title}">Title</td>
+      <td th:text="${item._source.category}">Category</td>
+      <td th:text="${item._source.author}">Author</td>
+      <td th:text="${item._source.wdate}">Date</td>
+    </tr>
+    </tbody>
+  </table>
+
+    <br/><br/>
+
+    <!-- Pagination Logic -->
+    <!-- 동적 할당 하기 위해서 지역변수 선언 -->
+    <div th:with="choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target}">
+      <!-- 파지네이션 -->
+      <nav aria-label="Page navigation" th:if="${totalPages > 0}">
+        <ul class="pagination justify-content-center">
+          <li class="page-item">
+            <a class="page-link" th:href="@{/searchlist(page=${1}, choice=${choice}, search=${search}, target=${target})}" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+              <span class="sr-only">First</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" th:href="@{/searchlist(page=${searchparameter.page - 1}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" aria-label="Previous">
+              <span aria-hidden="true"><</span>
+              <span class="sr-only">Previous</span>
+            </a>
+          </li>
+          <!-- 페이지 링크를 동적으로 생성 -->
+          <!-- 현재 페이지 그룹 계산 -->
+          <th:block th:with="currentPageGroup=${(searchparameter.page - 1) / 10}">
+            <li class="page-item" th:each="page : ${#numbers.sequence((currentPageGroup * 10) + 1, (currentPageGroup * 10) + 10)}"
+                th:if="${page} &lt;= ${totalPages}">
+              <a class="page-link" th:href="@{/searchlist(page=${page}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" th:text="${page}"></a>
+            </li>
+          </th:block>
+          <li class="page-item">
+          <a class="page-link" th:href="@{/searchlist(page=${searchparameter.page + 1}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" aria-label="Next">
+            <span class="sr-only">Next</span>
+            <span aria-hidden="true">></span>
+          </a>
+          </li>
+          <li class="page-item">
+
+            <a class="page-link" th:href="@{/searchlist(page=${totalPages}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" aria-label="Next">
+              <span class="sr-only">End</span>
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
+
+  </div>
+
+  <div th:else>
+<!--     <h3 th:if="${searchparameter.search != }"> 검색된 항목이 없습니다. </h3>-->
+  </div>
+
+<!--  <p th:text="${searchparameter.page}"></p>-->
+<!--  <p th:text="${searchparameter.search}"></p>-->
+
+
+<!--  <p th:text="${data.hits.hits[0]._source.title}"></p>-->
+
+
+
+
+
 </div>
+
+</br></br>
+
 
 
 
 
 <script type="text/javascript">
+
+  // const timestamp = `[${new Date().toUTCString()}]`;
   var search = document.querySelector('#searchparam');
   var choice = document.getElementById('choice').value;
+  var target = document.getElementById('targetHidden').value;
+  var research = document.getElementById('flexSwitchCheckDefault').checked;
+  // console.log(research, timestamp);
 
+  // console.log(target); // 초기화된 값 출력 (콘솔 확인용)
+  // console.log(search); // 초기화된 값 출력 (콘솔 확인용)
+  // console.log(choice); // 초기화된 값 출력 (콘솔 확인용)
+
+  function setValue(value) {
+    // console.log("Selected value: " + value);
+    target = value;
+  }
   function SearchOption() {
     // alert(document.getElementById('choice').value);
     // alert(search.value);
+    // console.log("target : " + target);
+    if (research == undefined){
+      research = false;
+    }
 
-    window.location.href = "/bbslist?page=1&choice=" + choice + "&search=" + search.value;
+    window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + search.value + "&target=" + target + "&research=" + research;
 
 
+  }
 
-
+  function updateReSearch() {
+    research = document.getElementById("flexSwitchCheckDefault").checked;
+    console.log(research);
   }
 
   document.getElementById('choice').onchange = function() {

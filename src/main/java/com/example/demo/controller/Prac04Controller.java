@@ -1,15 +1,21 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.ArticleEnt;
 import com.example.demo.model.Member;
+import com.example.demo.model.RequestParam;
+import com.example.demo.service.ElasticsearchService;
 import com.example.demo.service.Prac04Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
+import java.io.IOException;
 
 @Controller
 public class Prac04Controller {
@@ -25,6 +31,11 @@ public class Prac04Controller {
 
     @Autowired
     private Prac04Service service;
+
+    @Autowired
+    private ElasticsearchService esservice;
+
+
 
     @GetMapping("/")
     public String index() {
@@ -63,14 +74,47 @@ public class Prac04Controller {
     }
 
     @GetMapping("/searchlist")
-    public String searchlist() {
-        // 향후 page, choice, search 고려해서 만들자 ! @RequestParam 혹은 model 만들기.
+    public String searchlist(@ModelAttribute RequestParam requestParam, Model model) throws IOException {
+
+        // 로그인 인증세션
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getPrincipal() == "anonymousUser") {
+            return "login";
+        }
+        ArticleEnt art = esservice.sampleQuery(requestParam);
+
+        if(art.getHits() != null) {     // 추후 service로 빼기 할일 태산 ..
+            int totalPages = (int) Math.ceil(Double.parseDouble(art.getHits().getTotal().getValue()) / 5);
+            model.addAttribute("totalPages", totalPages);
+        }
 
 
 
+        model.addAttribute("data", art);                        // 검색결과 전달
+        model.addAttribute("searchparameter", requestParam);    // 페이징 검색어 등등 ... 전달
+
+        System.out.println(requestParam);
+//        System.out.println(requestParam);
 
         return "searchlist";
     }
+
+    @GetMapping("/searchlist/{nttId}")
+    public String searchlistDetail(@PathVariable("nttId") String nttId){
+
+        // 로그인 인증세션
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getPrincipal() == "anonymousUser" || authentication.getPrincipal() == null) {
+            System.out.println("비인가 회원");
+            return "redirect:/login/sessionout";
+        }
+
+
+
+        return "";
+    }
+
+
 
 
 
