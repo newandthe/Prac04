@@ -32,6 +32,8 @@
 
 <!-- Hidden input 요소 추가 -->
 <input type="hidden" id="targetHidden" th:value="${searchparameter.target}" />
+<input type="hidden" id="searchHidden" th:value="${searchparameter.search}" />
+<input type="hidden" id="searchArr" th:value="${searchparameter.reDiscoverArr}" />
 
 
 <div class="border rounded p-3" style="width: 1500px;  height: 600px; margin: 0 auto;">
@@ -76,8 +78,8 @@
     <!-- 결과 내 재 검색 버튼 -->
     <div class="form-check form-switch" style="display: flex; justify-content: flex-end; margin-right: 50px;">
       <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" th:checked="${searchparameter.research}" onclick="updateReSearch()">
-      <span> </span>
-      <label class="form-check-label" for="flexSwitchCheckDefault">결과 내 재검색</label>
+      <span>&nbsp;&nbsp;</span>
+      <label class="form-check-label" for="flexSwitchCheckDefault">결과 내 전체 재검색</label>
     </div>
 
 
@@ -113,13 +115,13 @@
       <nav aria-label="Page navigation" th:if="${totalPages > 0}">
         <ul class="pagination justify-content-center">
           <li class="page-item">
-            <a class="page-link" th:href="@{/searchlist(page=${1}, choice=${choice}, search=${search}, target=${target})}" aria-label="Previous">
+            <a class="page-link" href="#" aria-label="Previous" onclick="goToFirstPage(event)">
               <span aria-hidden="true">&laquo;</span>
               <span class="sr-only">First</span>
             </a>
           </li>
           <li class="page-item">
-            <a class="page-link" th:href="@{/searchlist(page=${searchparameter.page - 1}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" aria-label="Previous">
+            <a class="page-link" href="#" aria-label="Previous" onclick="goToPrev(event)">
               <span aria-hidden="true"><</span>
               <span class="sr-only">Previous</span>
             </a>
@@ -129,18 +131,18 @@
           <th:block th:with="currentPageGroup=${(searchparameter.page - 1) / 10}">
             <li class="page-item" th:each="page : ${#numbers.sequence((currentPageGroup * 10) + 1, (currentPageGroup * 10) + 10)}"
                 th:if="${page} &lt;= ${totalPages}">
-              <a class="page-link" th:href="@{/searchlist(page=${page}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" th:text="${page}"></a>
+              <a class="page-link" href="#" th:text="${page}" onclick="goToPage(this.innerText)"></a>
             </li>
           </th:block>
           <li class="page-item">
-          <a class="page-link" th:href="@{/searchlist(page=${searchparameter.page + 1}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" aria-label="Next">
+          <a class="page-link" href="#" aria-label="Next" onclick="goToNext(event)">
             <span class="sr-only">Next</span>
             <span aria-hidden="true">></span>
           </a>
           </li>
           <li class="page-item">
 
-            <a class="page-link" th:href="@{/searchlist(page=${totalPages}, choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target})}" aria-label="Next">
+            <a class="page-link" href="#" aria-label="Next" onclick="goToLastPage(this.getAttribute('data-total-pages'))" th:data-total-pages="${totalPages}">
               <span class="sr-only">End</span>
               <span aria-hidden="true">&raquo;</span>
             </a>
@@ -192,17 +194,123 @@
     target = value;
   }
   function SearchOption() {
-    // alert(document.getElementById('choice').value);
-    // alert(search.value);
-    // console.log("target : " + target);
     if (research == undefined){
       research = false;
     }
 
-    window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + search.value + "&target=" + target + "&research=" + research;
+    if (research == false){
+      var searchValue = encodeURIComponent(search.value);
+      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research;
+    } else {
+      var originSearch = document.getElementById('searchHidden').value;
 
+      var receivedData = document.getElementById('searchArr').value;
+      var searchwordRegex = /\[ReDiscover\(searchword=(.*?)\)\]/;
+      var matches = receivedData.match(searchwordRegex);
+      var searchwords = matches ? matches[1].split(',') : [];
+
+      console.log("추출된 검색어들: ", searchwords);
+
+      var url = "/searchlist?page=1&choice=" + choice + "&search=" + encodeURIComponent(originSearch) + "&target=" + target + "&research=" + research + "&searchword=" + encodeURIComponent(search.value);
+
+      for (var i = 0; i < searchwords.length; i++) {
+        url += "&searchword=" + encodeURIComponent(searchwords[i]);
+      }
+
+      window.location.href = url;
+    }
+  }
+
+
+  function goToPrev(event){
+    var currentURL = window.location.href;
+
+    // URL에서 "page" 파라미터의 값을 가져옴
+    var urlParams = new URLSearchParams(new URL(currentURL).search);
+    var currentPage = parseInt(urlParams.get("page"));
+
+    // 현재 페이지가 1보다 큰 경우에만 -1을 적용하여 새로운 페이지 번호 계산
+    if (currentPage > 1) {
+      var newPage = currentPage - 1;
+
+      // URL에서 "page" 파라미터를 새로운 페이지 번호로 변경
+      urlParams.set("page", newPage);
+
+      // 변경된 URL을 새로운 URL로 생성
+      var newURL = currentURL.split("?")[0] + "?" + urlParams.toString();
+
+      // 페이지 이동
+      window.location.href = newURL;
+    }
 
   }
+
+  function goToNext() {
+    var currentURL = window.location.href;
+
+    // URL에서 "page" 파라미터의 값을 가져옴
+    var urlParams = new URLSearchParams(new URL(currentURL).search);
+    var currentPage = parseInt(urlParams.get("page"));
+
+    // 페이지 증가
+    var newPage = currentPage + 1;
+
+    // URL에서 "page" 파라미터를 새로운 페이지 번호로 변경
+    urlParams.set("page", newPage);
+
+    // 변경된 URL을 새로운 URL로 생성
+    var newURL = currentURL.split("?")[0] + "?" + urlParams.toString();
+
+    // 페이지 이동
+    window.location.href = newURL;
+  }
+
+  function goToFirstPage() {
+    var currentURL = window.location.href;
+    var urlParams = new URLSearchParams(new URL(currentURL).search);
+
+    // "page" 파라미터를 1로 설정
+    urlParams.set("page", 1);
+
+    // 변경된 URL을 새로운 URL로 생성
+    var newURL = currentURL.split("?")[0] + "?" + urlParams.toString();
+
+    // 페이지 이동
+    window.location.href = newURL;
+  }
+
+  function goToLastPage(totalPages) {
+    var currentURL = window.location.href;
+    var urlParams = new URLSearchParams(new URL(currentURL).search);
+
+    // "page" 파라미터를 totalPages로 설정
+    urlParams.set("page", totalPages);
+
+    // 변경된 URL을 새로운 URL로 생성
+    var newURL = currentURL.split("?")[0] + "?" + urlParams.toString();
+
+    // 페이지 이동
+    window.location.href = newURL;
+  }
+
+  function goToPage(pageNumber) {
+    var currentURL = window.location.href;
+    var urlParams = new URLSearchParams(new URL(currentURL).search);
+
+    // 페이지 번호를 클릭된 페이지로 설정
+    urlParams.set("page", pageNumber);
+
+    // 변경된 URL을 새로운 URL로 생성
+    var newURL = currentURL.split("?")[0] + "?" + urlParams.toString();
+
+    // 페이지 이동
+    window.location.href = newURL;
+  }
+
+
+
+
+
 
   function updateReSearch() {
     research = document.getElementById("flexSwitchCheckDefault").checked;

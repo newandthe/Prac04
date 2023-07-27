@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.model.ArticleEnt;
 import com.example.demo.model.Member;
+import com.example.demo.model.ReDiscover;
 import com.example.demo.model.RequestParam;
 import com.example.demo.service.ElasticsearchService;
 import com.example.demo.service.Prac04Service;
@@ -16,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class Prac04Controller {
@@ -74,19 +77,30 @@ public class Prac04Controller {
     }
 
     @GetMapping("/searchlist")
-    public String searchlist(@ModelAttribute RequestParam requestParam, Model model) throws IOException {
+    public String searchlist(@ModelAttribute RequestParam requestParam, @ModelAttribute ReDiscover reDiscover, Model model) throws IOException {
+//        System.out.println(reDiscover);
 
         // 로그인 인증세션
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication.getPrincipal() == "anonymousUser") {
             return "login";
         }
+
+        // 재검색
+        requestParam = esservice.researchClear(requestParam, reDiscover);
+        System.out.println("아래가 Test");
+        System.out.println(requestParam);
+        System.out.println(reDiscover);
+
+        // 재검색을 고려한 검색 시작.
         ArticleEnt art = esservice.sampleQuery(requestParam);
 
         if(art.getHits() != null) {     // 추후 service로 빼기 할일 태산 ..
             int totalPages = (int) Math.ceil(Double.parseDouble(art.getHits().getTotal().getValue()) / 5);
             model.addAttribute("totalPages", totalPages);
         }
+
+
 
 
 

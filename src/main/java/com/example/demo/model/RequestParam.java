@@ -1,17 +1,15 @@
 package com.example.demo.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.validation.constraints.Min;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class RequestParam {
 
     @Builder.Default
@@ -30,6 +28,13 @@ public class RequestParam {
     @Builder.Default
     private boolean research = false;  // 결과 내 재검색 ( 기본 False )
 
-    private List<ReDiscoverArr> reDiscoverArr;
+    private ReDiscover reDiscoverParam;
+
+    private ArrayList<ReDiscover> reDiscoverArr;
+
+    // Getter 메서드 추가
+    public boolean isResearch() {
+        return research;
+    }
 
 }
