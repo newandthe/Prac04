@@ -17,7 +17,7 @@ public class RequestParam {
     private Integer page = 1;   // Default Value = 1페이지
 
     @Builder.Default
-    private String choice = "recentorderby"; // Default Value = 최신순
+    private String choice = "accuracyorderby"; // Default Value = 정확도 순
 
     @Builder.Default
     private String search = ""; // Default Value = ""
@@ -27,6 +27,9 @@ public class RequestParam {
 
     @Builder.Default
     private boolean research = false;  // 결과 내 재검색 ( 기본 False )
+
+    @Builder.Default
+    private String category = "전체"; // Default Value = 전체
 
     private ReDiscover reDiscoverParam;
 

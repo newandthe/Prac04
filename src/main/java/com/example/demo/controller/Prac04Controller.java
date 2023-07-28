@@ -86,6 +86,7 @@ public class Prac04Controller {
             return "login";
         }
 
+
         // 재검색
         requestParam = esservice.researchClear(requestParam, reDiscover);
         System.out.println("아래가 Test");
