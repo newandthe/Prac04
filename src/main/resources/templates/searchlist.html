@@ -13,6 +13,7 @@
       display: inline-block;
       text-align: center;
     }
+
   </style>
 </head>
 <body>
@@ -34,6 +35,7 @@
 <input type="hidden" id="targetHidden" th:value="${searchparameter.target}" />
 <input type="hidden" id="searchHidden" th:value="${searchparameter.search}" />
 <input type="hidden" id="searchArr" th:value="${searchparameter.reDiscoverArr}" />
+<input type="hidden" id="categoryHidden" th:value="${searchparameter.category}" />
 
 
 <div class="border rounded p-3" style="width: 1500px;  height: 600px; margin: 0 auto;">
@@ -44,9 +46,10 @@
   <div class="row">
 
     <div class="col-md-2" style="width: 150px;">
-      <select class="form-select" aria-label="Default select example" id="choice" onchange="getValue(this);" th:value="${searchparameter.choice}">
-        <option value="recentorderby" th:selected="${choice=='recentorderby'}">최신순</option>
-        <option value="olderorderby" th:selected="${choice=='olderorderby'}">오래된순</option>
+      <select class="form-select" aria-label="Default select example" id="choice" onchange="setChoice(getValue(this));" th:field="${searchparameter.choice}" th:value="${searchparameter.choice}">
+        <option th:value="accuracyorderby" th:selected="${choice=='accuracyorderby'}">정확도순</option>
+        <option th:value="recentorderby" th:selected="${choice=='recentorderby'}">최신순</option>
+        <option th:value="olderorderby" th:selected="${choice=='olderorderby'}">오래된순</option>
       </select>
     </div>
 
@@ -81,6 +84,33 @@
       <span>&nbsp;&nbsp;</span>
       <label class="form-check-label" for="flexSwitchCheckDefault">결과 내 전체 재검색</label>
     </div>
+
+    <br/>
+
+    <div class="dropdown">
+      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        카테고리 선택
+      </button>
+      <ul class="dropdown-menu" id="category" onchange="getValue(this);" th:value="${category}">
+        <li><a class="dropdown-item" onclick="setCategoryValue('전체')">전체 카테고리</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('행안부 파일')">행안부 파일</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('행안부 이미지')">행안부 이미지</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('정치')">정치</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('전국')">전국</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('오피니언')">오피니언</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('연예')">연예</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('스포츠')">스포츠</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('세계')">세계</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('산업')">산업</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('사회')">사회</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('사람들')">사람들</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('북한')">북한</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('문화')">문화</a></li>
+        <li><a class="dropdown-item" onclick="setCategoryValue('라이프')">라이프</a></li>
+        <li><a class="dropdown-item" onclick="setValue('getfilecontent')">경제</a></li>
+      </ul>
+    </div>
+    <span>현재 카테고리 : </span> <span id="categoryInnerLine" th:value="${category}"></span>
 
 
 
@@ -182,7 +212,10 @@
   var search = document.querySelector('#searchparam');
   var choice = document.getElementById('choice').value;
   var target = document.getElementById('targetHidden').value;
+  var category = document.getElementById('categoryHidden').value;
+  document.getElementById("categoryInnerLine").innerText = category;
   var research = document.getElementById('flexSwitchCheckDefault').checked;
+
   // console.log(research, timestamp);
 
   // console.log(target); // 초기화된 값 출력 (콘솔 확인용)
@@ -193,14 +226,26 @@
     // console.log("Selected value: " + value);
     target = value;
   }
+
+  function setCategoryValue(value) {
+    category = value;
+
+    document.getElementById("categoryInnerLine").innerText = category;
+  }
+
+  function setChoice(value) {
+    // alert("on here!!");
+    choice = value;
+  }
   function SearchOption() {
     if (research == undefined){
       research = false;
     }
+    // alert(choice);
 
     if (research == false){
       var searchValue = encodeURIComponent(search.value);
-      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research;
+      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research + "&category=" + category;
     } else {
       var originSearch = document.getElementById('searchHidden').value;
 
@@ -216,6 +261,8 @@
       for (var i = 0; i < searchwords.length; i++) {
         url += "&searchword=" + encodeURIComponent(searchwords[i]);
       }
+
+      url += "&category=" + category;
 
       window.location.href = url;
     }
@@ -320,6 +367,7 @@
   document.getElementById('choice').onchange = function() {
     choice = document.getElementById('choice').value;
   };
+
 
 
 
