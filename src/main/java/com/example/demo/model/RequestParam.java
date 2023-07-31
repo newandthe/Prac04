@@ -34,6 +34,8 @@ public class RequestParam {
     private ReDiscover reDiscoverParam;
 
     private ArrayList<ReDiscover> reDiscoverArr;
+    
+    private String query; // 현재 검색어
 
     // Getter 메서드 추가
     public boolean isResearch() {

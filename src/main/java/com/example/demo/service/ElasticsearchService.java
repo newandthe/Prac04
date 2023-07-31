@@ -12,12 +12,16 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MultiMatchQueryBuilder;
 import org.elasticsearch.index.query.Operator;
@@ -27,10 +31,17 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.management.Query;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +58,11 @@ public class ElasticsearchService {
 
     private static final String INDEX = "jsk_index";
 
+    private static final String SAERCHLOG = "search-log";
+
+
+
+
     // 전체 쿼리 처리
     public ArticleEnt sampleQuery(RequestParam requestParam) throws IOException {
         if(requestParam.getSearch().trim().equals("")){
@@ -60,7 +76,7 @@ public class ElasticsearchService {
 
         init();
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.trackTotalHits(true);   // hits가 1만건 초과되면 value 1만개 고정.. default "해제"
+        searchSourceBuilder.trackTotalHits(true);   // default: hits 1만건 초과 -> value 1만개 고정.. 따라서 default "해제"
 
         // 정렬을 위한 설정
         String sorting_field = "";
@@ -79,9 +95,8 @@ public class ElasticsearchService {
 
 
 
-
         // RequestParam에 따른 동적 쿼리
-        if (requestParam.getTarget().equals("getall")) {
+        if (requestParam.getTarget().equals("getall")) { // 전체 검색이라면
 
 
             BoolQueryBuilder categoryQuery = QueryBuilders.boolQuery();
@@ -143,7 +158,7 @@ public class ElasticsearchService {
 
 
         }
-        // 전체 검색이아니라면 .. // 깔끔하게하려면 검색로직 함수로 빼내서 호출하면되는데, 마지막이라서 ..
+        // 전체 검색이아니라면 .. // 깔끔하게하려면 검색로직 함수로 빼내서 호출하도록 ....
         else {
             String etc = "";
 //        System.out.println(etc);
@@ -227,23 +242,27 @@ public class ElasticsearchService {
         SearchRequest searchRequest = new SearchRequest(INDEX)
                 .source(searchSourceBuilder);
 
-        System.out.println(searchRequest);
+        System.out.println(searchRequest);  // 요청쿼리 출력
 
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
-//        System.out.println(searchResponse.toString());
+//        System.out.println(searchResponse.toString());  // 결과 json 출력
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         JsonNode jsonNode = objectMapper.readTree(String.valueOf(searchResponse));
         ArticleEnt art = objectMapper.treeToValue(jsonNode, ArticleEnt.class);
 
-        // 냉장고를 (sodwkdrh)로 잘못 입력한 경우 => "냉장고"로 return
+
+        crawlLog(requestParam, art.getHits().getTotal().getValue(), art.getTook());     // 검색로그 저장
+//        System.out.println(art.getHits().getTotal().getValue());  // value 값
+//        System.out.println(art.getTook());  // took 값
+
+        // 냉장고를 (sodwkdrh)로 잘못 입력한 경우 => "냉장고"로 return ( 검색결과가 없는 경우 && 오직 영어로만 검색어가 정해진 경우 )
         if (IsOnlyEnglish.isEnglishString(requestParam.getSearch()) && art.getHits().getHits().length == 0){
 //            System.out.println(EngToKor.engToKor(requestParam.getSearch()));
             requestParam.setSearch( EngToKor.engToKor(requestParam.getSearch()) );  // 오타 가능성이 있는 영문을 한글로 바꾸어 다시 검색
             art = sampleQuery(requestParam);
-
         }
 
         return art;
@@ -275,6 +294,100 @@ public class ElasticsearchService {
 //        System.out.println("다음은 return 값" + requestParam);
 
         return requestParam;
+    }
+
+
+    public void crawlLog(RequestParam requestParam, String hit_total, int took){
+
+        // 파라미터 정의 시작
+        // asc 정의
+        Boolean asc;
+        if(requestParam.getChoice().equals("accuracyorderby")  || requestParam.getChoice().equals("recentorderby")){
+            asc = false; // desc
+        } else {
+            asc = true;
+        }
+
+        // createdDate 정의
+        // 현재 시간 얻기
+        LocalDateTime now = LocalDateTime.now();
+        // 포맷 정의
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        // 형식에 맞게 문자열로 변환
+        String createdDate = now.format(formatter);
+        System.out.println(createdDate);
+
+        String domain = "0번사전";
+
+        String ip = "127.0.0.1";
+        // IP 주소 취득
+        try {
+            // 현재 호스트의 InetAddress 객체 얻기
+            InetAddress localHost = InetAddress.getLocalHost();
+
+            // IP 주소 얻기
+            ip = localHost.getHostAddress();
+
+            // 결과 출력
+//            System.out.println("현재 IP 주소: " + ip);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        // 정렬기준
+        String sort="_score";
+        if(requestParam.getChoice().equals("accuracyorderby")){
+            sort = "_score";
+        } else if (requestParam.getChoice().equals("recentorderby") || requestParam.getChoice().equals("olderorderby")){
+            sort = "wdate";
+        }
+
+        // user ID 취득
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        int startIndex = username.indexOf("username=") + "username=".length();
+        int endIndex = username.indexOf(",", startIndex);
+        String extractedUsername = username.substring(startIndex, endIndex);
+
+
+        // 파라미터 정의 끝
+
+        try {
+            XContentBuilder builder = XContentFactory.jsonBuilder()
+                    .startObject()
+                    .field("asc", asc)
+                    .field("category", requestParam.getCategory())
+                    .field("createdDate", createdDate)
+                    .field("domain", domain)
+                    .field("ip", ip)
+                    .field("oquery", requestParam.getReDiscoverParam())
+                    .field("param", requestParam.toString())
+                    .field("query", requestParam.getQuery())
+                    .field("re", requestParam.isResearch())
+                    .field("referer", "none")
+                    .field("sort", sort)
+                    .field("took", took)
+                    .field("total", hit_total)
+                    .field("user", extractedUsername)
+                    .endObject();
+
+
+            System.out.println("builder!!!!!");
+            System.out.println(builder);
+            // IndexRequest 객체 생성 및 JSON 문서 추가
+            IndexRequest indexRequest = new IndexRequest("search-log") // 인덱스 이름
+                    .source(builder);
+
+            // IndexRequest를 Elasticsearch에 전송하여 데이터를 인덱스에 추가
+            IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+
+            System.out.println(indexResponse);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
     }
 
 }

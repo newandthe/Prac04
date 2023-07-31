@@ -245,10 +245,10 @@
 
     if (research == false){
       var searchValue = encodeURIComponent(search.value);
-      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research + "&category=" + category;
+      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research + "&category=" + category + "&query=" + searchValue;
     } else {
       var originSearch = document.getElementById('searchHidden').value;
-
+      var searchValue = encodeURIComponent(search.value);
       var receivedData = document.getElementById('searchArr').value;
       var searchwordRegex = /\[ReDiscover\(searchword=(.*?)\)\]/;
       var matches = receivedData.match(searchwordRegex);
@@ -256,7 +256,7 @@
 
       console.log("추출된 검색어들: ", searchwords);
 
-      var url = "/searchlist?page=1&choice=" + choice + "&search=" + encodeURIComponent(originSearch) + "&target=" + target + "&research=" + research + "&searchword=" + encodeURIComponent(search.value);
+      var url = "/searchlist?page=1&choice=" + choice + "&search=" + encodeURIComponent(originSearch) + "&target=" + target + "&research=" + research + "&searchword=" + encodeURIComponent(search.value) + "&query=" + searchValue;
 
       for (var i = 0; i < searchwords.length; i++) {
         url += "&searchword=" + encodeURIComponent(searchwords[i]);

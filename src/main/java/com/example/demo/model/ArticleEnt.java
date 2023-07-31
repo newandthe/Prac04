@@ -9,6 +9,7 @@ public class ArticleEnt {
 //    private int took;
 //    private boolean timed_out;
     private Hits hits;
+    private int took;
 
 
     @Data
