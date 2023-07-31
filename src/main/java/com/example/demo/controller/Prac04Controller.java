@@ -8,6 +8,7 @@ import com.example.demo.service.ElasticsearchService;
 import com.example.demo.service.Prac04Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -69,6 +70,7 @@ public class Prac04Controller {
             // 현재 스레드의 SecurityContext에 인증 객체 설정
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+
             return "success";
         } else {
             // 인증 실패
@@ -85,6 +87,16 @@ public class Prac04Controller {
         if (authentication.getPrincipal() == "anonymousUser") {
             return "login";
         }
+
+//        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//        UserDetails userDetails = (UserDetails)principal;
+//        String username = ((UserDetails) principal).getUsername();
+//        System.out.println(userDetails);
+//        System.out.println(username);
+
+
+
+
 
 
         // 재검색
