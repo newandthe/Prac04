@@ -1,49 +1,45 @@
 package com.example.demo.service;
 
 import com.example.demo.config.ElasticsearchConfig;
-import com.example.demo.model.ArticleEnt;
-import com.example.demo.model.ReDiscover;
-import com.example.demo.model.RequestParam;
-import com.example.demo.model.searchParsedEntity;
+import com.example.demo.model.*;
 import com.example.demo.utility.EngToKor;
 import com.example.demo.utility.IsOnlyEnglish;
 import com.example.demo.utility.SearchParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpHost;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MultiMatchQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.management.Query;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ElasticsearchService {
@@ -93,18 +89,23 @@ public class ElasticsearchService {
         }
 
 
+        BoolQueryBuilder categoryQuery = QueryBuilders.boolQuery();
+        if (!requestParam.getCategory().equals("전체")) {
+            categoryQuery.should(QueryBuilders.matchQuery("category", requestParam.getCategory()));
+        }
 
+        BoolQueryBuilder multiMatchQuery = QueryBuilders.boolQuery();
 
         // RequestParam에 따른 동적 쿼리
         if (requestParam.getTarget().equals("getall")) { // 전체 검색이라면
 
 
-            BoolQueryBuilder categoryQuery = QueryBuilders.boolQuery();
-            if (!requestParam.getCategory().equals("전체")) {
-                categoryQuery.should(QueryBuilders.matchQuery("category", requestParam.getCategory()));
-            }
+//            BoolQueryBuilder categoryQuery = QueryBuilders.boolQuery();
+//            if (!requestParam.getCategory().equals("전체")) {
+//                categoryQuery.should(QueryBuilders.matchQuery("category", requestParam.getCategory()));
+//            }
 
-            BoolQueryBuilder multiMatchQuery = QueryBuilders.boolQuery();
+//            BoolQueryBuilder multiMatchQuery = QueryBuilders.boolQuery();
 
 
             if (searchedpEnt.getMust().length > 0) {
@@ -139,25 +140,25 @@ public class ElasticsearchService {
 
 
 
-            // 정렬 쿼리 빌더 생성
-            FieldSortBuilder updatedAtSort = SortBuilders.fieldSort(sorting_field);
-            // 정렬 방향 설정
-            if (sorting_standard.equals("DESC")) {
-                updatedAtSort.order(SortOrder.DESC);
-            } else if (sorting_standard.equals("ASC")) {
-                updatedAtSort.order(SortOrder.ASC);
-            }
+//            // 정렬 쿼리 빌더 생성
+//            FieldSortBuilder updatedAtSort = SortBuilders.fieldSort(sorting_field);
+//            // 정렬 방향 설정
+//            if (sorting_standard.equals("DESC")) {
+//                updatedAtSort.order(SortOrder.DESC);
+//            } else if (sorting_standard.equals("ASC")) {
+//                updatedAtSort.order(SortOrder.ASC);
+//            }
+//
+//            // 쿼리 결합
+//            BoolQueryBuilder finalQuery = QueryBuilders.boolQuery()
+//                    .must(categoryQuery)
+//                    .must(multiMatchQuery);
+//
+//            // 정렬 쿼리까지 적용
+//            searchSourceBuilder.query(finalQuery).sort(updatedAtSort);
+        }   // 전체 검색의 끝 ..
 
-            // 쿼리 결합
-            BoolQueryBuilder finalQuery = QueryBuilders.boolQuery()
-                    .must(categoryQuery)
-                    .must(multiMatchQuery);
 
-            // 정렬 쿼리까지 적용
-            searchSourceBuilder.query(finalQuery).sort(updatedAtSort);
-
-
-        }
         // 전체 검색이아니라면 .. // 깔끔하게하려면 검색로직 함수로 빼내서 호출하도록 ....
         else {
             String etc = "";
@@ -172,12 +173,12 @@ public class ElasticsearchService {
                 etc = "_file.content";
             }
 
-            BoolQueryBuilder categoryQuery = QueryBuilders.boolQuery();
-            if (!requestParam.getCategory().equals("전체")) {
-                categoryQuery.should(QueryBuilders.matchQuery("category", requestParam.getCategory()));
-            }
+//            BoolQueryBuilder categoryQuery = QueryBuilders.boolQuery();
+//            if (!requestParam.getCategory().equals("전체")) {
+//                categoryQuery.should(QueryBuilders.matchQuery("category", requestParam.getCategory()));
+//            }
 
-            BoolQueryBuilder multiMatchQuery = QueryBuilders.boolQuery();
+//            BoolQueryBuilder multiMatchQuery = QueryBuilders.boolQuery();
 
             for (int i = 0; i < searchedpEnt.getMust().length; i++) {
                 String mustWord = searchedpEnt.getMust()[i];
@@ -200,24 +201,26 @@ public class ElasticsearchService {
                 }
             }
 
-            // 정렬 쿼리 빌더 생성
-            FieldSortBuilder updatedAtSort = SortBuilders.fieldSort(sorting_field);
-            // 정렬 방향 설정
-            if (sorting_standard.equals("DESC")) {
-                updatedAtSort.order(SortOrder.DESC);
-            } else if (sorting_standard.equals("ASC")) {
-                updatedAtSort.order(SortOrder.ASC);
-            }
 
-            // 쿼리 결합
-            BoolQueryBuilder finalQuery = QueryBuilders.boolQuery()
-                    .must(categoryQuery)
-                    .must(multiMatchQuery);
 
-            // 정렬 쿼리까지 적용
-            searchSourceBuilder.query(finalQuery).sort(updatedAtSort);
+        }   // 전체검색이 아닌경우의 끝 ..
 
+        // 정렬 쿼리 빌더 생성
+        FieldSortBuilder updatedAtSort = SortBuilders.fieldSort(sorting_field);
+        // 정렬 방향 설정
+        if (sorting_standard.equals("DESC")) {
+            updatedAtSort.order(SortOrder.DESC);
+        } else if (sorting_standard.equals("ASC")) {
+            updatedAtSort.order(SortOrder.ASC);
         }
+
+        // 쿼리 결합
+        BoolQueryBuilder finalQuery = QueryBuilders.boolQuery()
+                .must(categoryQuery)
+                .must(multiMatchQuery);
+
+        // 정렬 쿼리까지 적용
+        searchSourceBuilder.query(finalQuery).sort(updatedAtSort);
 
         searchSourceBuilder.size(5);    // 페이지당 5개씩 출력
         searchSourceBuilder.from((requestParam.getPage()-1) * 5);   // Pagination을 위한 "from"
@@ -238,6 +241,14 @@ public class ElasticsearchService {
             }
             searchSourceBuilder.postFilter(postFilter);
         }
+
+        // HighlightBuilder를 사용한 하이라이팅 설정 ( 검색에서 어디가 일치해 도출 된건지 강조 표시 (b태그로) )
+        HighlightBuilder highlightBuilder = new HighlightBuilder();
+        highlightBuilder.field("title").highlighterType("plain").preTags("<b>").postTags("</b>");
+        highlightBuilder.field("content").highlighterType("plain").preTags("<b>").postTags("</b>");
+        highlightBuilder.field("_file.content").highlighterType("plain").preTags("<b>").postTags("</b>");
+        highlightBuilder.field("_file.nameOrg").highlighterType("plain").preTags("<b>").postTags("</b>");
+        searchSourceBuilder.highlighter(highlightBuilder);
 
         SearchRequest searchRequest = new SearchRequest(INDEX)
                 .source(searchSourceBuilder);
@@ -372,8 +383,8 @@ public class ElasticsearchService {
                     .endObject();
 
 
-            System.out.println("builder!!!!!");
-            System.out.println(builder);
+//            System.out.println("builder!!!!!");
+//            System.out.println(builder);
             // IndexRequest 객체 생성 및 JSON 문서 추가
             IndexRequest indexRequest = new IndexRequest("search-log") // 인덱스 이름
                     .source(builder);
@@ -381,13 +392,83 @@ public class ElasticsearchService {
             // IndexRequest를 Elasticsearch에 전송하여 데이터를 인덱스에 추가
             IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
 
-            System.out.println(indexResponse);
+//            System.out.println(indexResponse);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
+    public List<TopKeyword> top_search_log() throws IOException {
+
+        init();
+        // 쿼리 빌더 생성
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.rangeQuery("createdDate").gte("now-7d/d"));
+        sourceBuilder.size(0);
+
+        // 집계(aggregation) 설정
+        TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms("popular_search_terms")
+                .field("query")
+                .size(10);
+
+        sourceBuilder.aggregation(aggregationBuilder);
+
+        // SearchRequest 생성
+        SearchRequest searchRequest = new SearchRequest(SAERCHLOG);
+        searchRequest.source(sourceBuilder);
+
+        // 쿼리 실행
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+//        System.out.println(searchResponse);
+
+        // 집계 결과 처리
+        Terms termsAggregation = searchResponse.getAggregations().get("popular_search_terms");
+        List<? extends Terms.Bucket> buckets = termsAggregation.getBuckets();
+
+        // TopKeyword 리스트 초기화
+        List<TopKeyword> topKeywords = new ArrayList<>();
+
+        // 결과를 리스트에 저장
+        for (Terms.Bucket bucket : buckets) {
+            String key = bucket.getKeyAsString();
+            long doc_Count = bucket.getDocCount();
+
+            // TopKeyword 객체 생성 및 값 설정
+            TopKeyword topKeyword = new TopKeyword();
+            topKeyword.setKey(key);
+            topKeyword.setDoc_count(doc_Count);
+
+            // 리스트에 추가
+            topKeywords.add(topKeyword);
+        }
+        return topKeywords;
+    }
+
+
+    public List<String> getAutoComplete(String searchdata) throws IOException {
+
+        init();
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        System.out.println("searchdata: " + searchdata);
+        sourceBuilder.query(QueryBuilders.matchQuery("keyword", searchdata));
+        sourceBuilder.size(5);
+
+        SearchRequest searchRequest = new SearchRequest("autocomplete-dict");
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+        List<String> result = new ArrayList<>();
+        Set<String> uniqueKeywords = new HashSet<>();
+
+        for (int i = 0; i < searchResponse.getHits().getHits().length; i++) {
+            String keyword = searchResponse.getHits().getHits()[i].getSourceAsMap().get("keyword").toString();
+            uniqueKeywords.add(keyword);
+        }
+
+        result.addAll(uniqueKeywords);
+        return result;
+    }
 }

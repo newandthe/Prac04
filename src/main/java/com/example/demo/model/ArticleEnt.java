@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Data
@@ -18,6 +19,7 @@ public class ArticleEnt {
 //        private double max_score;
         private HitData[] hits;
 
+
         @Data
         public static class Total { // art.getHits.getTotal()
             private String value;   // art.getHits().getTotal().getValue() // 검색된 게시물의 개수
@@ -29,6 +31,7 @@ public class ArticleEnt {
 
             private double _score;
             private Source _source;
+            private HitData.highlight highlight;
 
             @Data
             public static class Source {
@@ -59,6 +62,22 @@ public class ArticleEnt {
                     private String content;
                 }
             }
+
+
+            @Data
+            public static class highlight {
+                private String[] title;
+
+                private String[] content;
+
+                @JsonProperty("_file.content")
+                private String[] fileContentHighlight;
+
+                @JsonProperty("_file.nameOrg")
+                private String[] filenameOrgHighlight;
+            }
+
+
         }
     }
 

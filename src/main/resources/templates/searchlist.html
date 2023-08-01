@@ -14,12 +14,20 @@
       text-align: center;
     }
 
+
+
+
+
+
+
+
+
   </style>
 </head>
 <body>
 <div style="text-align: center; margin-top: 50px;">
   <h1 style="display: inline;">SearchList</h1>
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
   &nbsp;&nbsp;&nbsp;
   <a class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href="/logout">
@@ -37,24 +45,54 @@
 <input type="hidden" id="searchArr" th:value="${searchparameter.reDiscoverArr}" />
 <input type="hidden" id="categoryHidden" th:value="${searchparameter.category}" />
 
+<div class="container mt-2">
+  <!-- 리스트가 비어있는 경우 메시지 출력 -->
+  <div th:if="${topKeywordList.isEmpty()}">
+    <p>검색된 로그가 없습니다.</p>
+  </div>
 
-<div class="border rounded p-3" style="width: 1500px;  height: 600px; margin: 0 auto;">
+  <!-- 리스트가 비어있지 않은 경우 -->
+  <div th:if="${not topKeywordList.isEmpty()}">
+    <h3>인기 검색어</h3>
+    <ul class="list-group">
+      <li th:each="keyword : ${topKeywordList}" class="list-group-item justify-content-between align-items-center" style="max-width: 230px;">
+        <!-- keyword 객체의 필드 값을 사용 -->
+        <div class="d-flex">
+          <span style="font-weight: bold">"</span>
+          <span class="truncate-text" th:text="${keyword.key}"></span>
+          <span style="font-weight: bold">"</span> &nbsp;
+          <span th:text="${keyword.doc_count}" style="text-align: right; font-weight: bold"></span>
+          <span> 회</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<br/><br/>
+
+
+<div class="border rounded p-3" style="width: 1500px;  height: 1200px; margin: 0 auto;">
 
 
   <br/>
   <!-- 검색 및 정렬 -->
   <div class="row">
-
     <div class="col-md-2" style="width: 150px;">
       <select class="form-select" aria-label="Default select example" id="choice" onchange="setChoice(getValue(this));" th:field="${searchparameter.choice}" th:value="${searchparameter.choice}">
         <option th:value="accuracyorderby" th:selected="${choice=='accuracyorderby'}">정확도순</option>
         <option th:value="recentorderby" th:selected="${choice=='recentorderby'}">최신순</option>
         <option th:value="olderorderby" th:selected="${choice=='olderorderby'}">오래된순</option>
       </select>
+      <br/>
     </div>
 
-    <div class="col-md-10">
-      <div class="input-group" style="float: right; margin-left: 250px;">
+    <div class="d-flex align-items-center">
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          검색 대상
+        </button>
+        &nbsp;&nbsp;
         <ul class="dropdown-menu dropdown-menu-end" id="target" onchange="getValue(this);" th:value="${target}">
           <li><a class="dropdown-item" onclick="setValue('getall')">전체</a></li>
           <li><a class="dropdown-item" onclick="setValue('gettitle')">제목</a></li>
@@ -62,21 +100,49 @@
           <li><a class="dropdown-item" onclick="setValue('getfilename')">파일 이름</a></li>
           <li><a class="dropdown-item" onclick="setValue('getfilecontent')">파일 내용</a></li>
         </ul>
-        <input type="text" class="form-control" aria-label="Text input with segmented dropdown button" id="searchparam" th:value="${searchparameter.search}">
-        <button type="button" class="btn btn-outline-secondary" onclick="SearchOption()">검색</button>
-        <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-          <span class="visually-hidden">Toggle Dropdown</span>
-        </button>
       </div>
-    </div>
 
+
+
+      <input type="text" class="form-control" id="searchparam" th:value="${searchparameter.query}" style="width: 900px;" oninput="AutoComplete()"> &nbsp;&nbsp;
+      <button type="button" class="btn btn-outline-secondary" onclick="SearchOption()">검색</button>&nbsp;&nbsp;
+      <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <span class="visually-hidden">Toggle Dropdown</span>
+      </button>
+    </div>
   </div>
+
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <ul class="list-group" id="autocomplete-results" style="padding-left: 130px; width: 1030px"></ul>
   <br/>
+
+  <div class="dropdown" style="width: 200px;">
+    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      카테고리 선택
+    </button>
+    <ul class="dropdown-menu" id="category" onchange="getValue(this);" th:value="${category}">
+      <li><a class="dropdown-item" onclick="setCategoryValue('전체')">전체 카테고리</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('행안부 파일')">행안부 파일</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('행안부 이미지')">행안부 이미지</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('정치')">정치</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('전국')">전국</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('오피니언')">오피니언</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('연예')">연예</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('스포츠')">스포츠</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('세계')">세계</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('산업')">산업</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('사회')">사회</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('사람들')">사람들</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('북한')">북한</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('문화')">문화</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('라이프')">라이프</a></li>
+      <li><a class="dropdown-item" onclick="setValue('getfilecontent')">경제</a></li>
+    </ul>
+  </div>
+  <span>현재 카테고리 : </span> <span id="categoryInnerLine" th:value="${category}"></span>
 
   <!-- 검색 결과물이 있는 경우에만 아래 출력 -->
   <div th:if="${data.hits != null and not #lists.isEmpty(data.hits.hits)}">
-
-
 
     <!-- 결과 내 재 검색 버튼 -->
     <div class="form-check form-switch" style="display: flex; justify-content: flex-end; margin-right: 50px;">
@@ -87,30 +153,7 @@
 
     <br/>
 
-    <div class="dropdown">
-      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        카테고리 선택
-      </button>
-      <ul class="dropdown-menu" id="category" onchange="getValue(this);" th:value="${category}">
-        <li><a class="dropdown-item" onclick="setCategoryValue('전체')">전체 카테고리</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('행안부 파일')">행안부 파일</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('행안부 이미지')">행안부 이미지</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('정치')">정치</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('전국')">전국</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('오피니언')">오피니언</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('연예')">연예</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('스포츠')">스포츠</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('세계')">세계</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('산업')">산업</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('사회')">사회</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('사람들')">사람들</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('북한')">북한</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('문화')">문화</a></li>
-        <li><a class="dropdown-item" onclick="setCategoryValue('라이프')">라이프</a></li>
-        <li><a class="dropdown-item" onclick="setValue('getfilecontent')">경제</a></li>
-      </ul>
-    </div>
-    <span>현재 카테고리 : </span> <span id="categoryInnerLine" th:value="${category}"></span>
+
 
 
 
@@ -128,7 +171,9 @@
     </thead>
     <tbody>
     <tr th:each="item : ${data.hits.hits}">
-      <td th:text="${item._source.title}">Title</td>
+      <td th:utext="${item.highlight.getTitle() != null} ? ${item.highlight.getTitle()[0]} : ${item._source.title}">
+        Title
+      </td>
       <td th:text="${item._source.category}">Category</td>
       <td th:text="${item._source.author}">Author</td>
       <td th:text="${item._source.wdate}">Date</td>
@@ -203,9 +248,6 @@
 </br></br>
 
 
-
-
-
 <script type="text/javascript">
 
   // const timestamp = `[${new Date().toUTCString()}]`;
@@ -254,7 +296,7 @@
       var matches = receivedData.match(searchwordRegex);
       var searchwords = matches ? matches[1].split(',') : [];
 
-      console.log("추출된 검색어들: ", searchwords);
+      // console.log("추출된 검색어들: ", searchwords);
 
       var url = "/searchlist?page=1&choice=" + choice + "&search=" + encodeURIComponent(originSearch) + "&target=" + target + "&research=" + research + "&searchword=" + encodeURIComponent(search.value) + "&query=" + searchValue;
 
@@ -266,6 +308,51 @@
 
       window.location.href = url;
     }
+  }
+
+  function AutoComplete(){
+    var searchValue = document.getElementById("searchparam").value;
+    // console.log(searchValue);
+// AJAX 호출을 수행합니다.
+    $.ajax({
+      url: "/getAutoComplete", // 자동완성 결과를 받아올 엔드포인트 URL을 입력해주세요.
+      type: "GET",
+      data: {
+        searchdata: searchValue
+      },
+      success: function(data) {
+        // AJAX 호출이 성공하면, 결과를 처리하는 함수를 호출합니다.
+        // console.log("Received data:", data);
+        handleAutoCompleteResults(data);
+      },
+      error: function() {
+        // AJAX 호출이 실패하면, 에러 처리를 합니다.
+        console.log("Error occurred during AJAX call.");
+      }
+    });
+  }
+
+  function handleAutoCompleteResults(results) {
+    // 결과를 받아와서 ul 태그에 추가하는 함수
+    var autocompleteResults = $("#autocomplete-results");
+    autocompleteResults.empty(); // 기존 결과를 지우고 새로운 결과를 추가
+
+    // 받아온 결과를 ul 태그에 추가합니다.
+    results.forEach(function(result) {
+      var listItem = $("<li class=\"list-group-item\"></li>");
+      var link = $("<a></a>")
+              .addClass("dropdown-item")
+              .text(result); // 받아온 결과값을 출력
+
+      // 자동완성된 검색어를 클릭하면 해당 검색어를 검색어 입력창에 추가하고, 검색을 수행
+      link.click(function() {
+        $("#searchparam").val(result);
+        SearchOption(); // 검색을 수행하는 함수를 호출
+      });
+
+      listItem.append(link);
+      autocompleteResults.append(listItem);
+    });
   }
 
 
