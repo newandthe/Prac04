@@ -1,14 +1,11 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.ArticleEnt;
-import com.example.demo.model.Member;
-import com.example.demo.model.ReDiscover;
+import com.example.demo.model.*;
 import com.example.demo.model.RequestParam;
 import com.example.demo.service.ElasticsearchService;
 import com.example.demo.service.Prac04Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -98,12 +94,14 @@ public class Prac04Controller {
 
 
 
+        // 인기 검색어 10개
+        List<TopKeyword> topKeywordList = esservice.top_search_log();
 
         // 재검색
         requestParam = esservice.researchClear(requestParam, reDiscover);
-        System.out.println("아래가 Test");
-        System.out.println(requestParam);
-        System.out.println(reDiscover);
+//        System.out.println("아래가 Test");
+//        System.out.println(requestParam);
+//        System.out.println(reDiscover);
 
         // 재검색을 고려한 검색 시작.
         ArticleEnt art = esservice.sampleQuery(requestParam);
@@ -114,16 +112,26 @@ public class Prac04Controller {
         }
 
 
-
-
-
+//        System.out.println("art!!!!!!!!!!!!!!");
+//        System.out.println(art);
         model.addAttribute("data", art);                        // 검색결과 전달
         model.addAttribute("searchparameter", requestParam);    // 페이징 검색어 등등 ... 전달
+        model.addAttribute("topKeywordList", topKeywordList);   // 인기 검색어 최대 10개 전달..
 
         System.out.println(requestParam);
 //        System.out.println(requestParam);
 
         return "searchlist";
+    }
+
+    @ResponseBody
+    @GetMapping("/getAutoComplete")
+    public List<String> getAutoComplete(String searchdata) throws IOException {
+
+        List<String> result = esservice.getAutoComplete(searchdata);
+        System.out.println("result: " + result);
+
+        return result;
     }
 
     @GetMapping("/searchlist/{nttId}")
