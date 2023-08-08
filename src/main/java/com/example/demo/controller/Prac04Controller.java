@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.auth.PrincipalDetails;
 import com.example.demo.model.*;
 import com.example.demo.model.RequestParam;
 import com.example.demo.service.ElasticsearchService;
@@ -52,7 +53,7 @@ public class Prac04Controller {
 
         Member trylogin_mem = service.getUser(member.getUsername());
 
-//      System.out.println(trylogin_mem.toString());
+        // System.out.println(trylogin_mem.toString());
         if(trylogin_mem == null) {  // 입력한 아이디가 존재하지 않을경우 실패처리.
             return "fail";
         }
@@ -66,6 +67,11 @@ public class Prac04Controller {
             // 현재 스레드의 SecurityContext에 인증 객체 설정
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+//            System.out.println("test!!!!!!");
+//            PrincipalDetails test = (PrincipalDetails) authentication.getPrincipal();
+//            System.out.println(test.getMember());
+//            System.out.println(test.getUsername());
+
 
             return "success";
         } else {
@@ -74,80 +80,144 @@ public class Prac04Controller {
         }
     }
 
+    @GetMapping("/regi")
+    public String regi() {return "regi";}
+
+    @PostMapping("/regiAf")
+    public String regiAf(@org.springframework.web.bind.annotation.RequestParam("username") String username, @org.springframework.web.bind.annotation.RequestParam("password") String password) {
+//        System.out.println(username);
+//        System.out.println(password);
+
+        if(username.trim() == "" || username == null) {
+            System.out.println("username isNull!!");
+            return "login";
+        } else if(password.trim() == "" | password == null) {
+            System.out.println("password isNull!!");
+            return "login";
+        }
+
+        Member member = new Member();
+
+        member.setUsername(username);
+        String encodedPassword = bCryptPasswordEncoder.encode(password);
+        member.setPassword(encodedPassword);
+
+        boolean isSuccess = service.regiAf(member);
+
+        System.out.println(isSuccess);
+
+
+
+        return "login";
+    }
+
+    @PostMapping("/checkDuplicateUsername")
+    @ResponseBody
+    public String checkDuplicateUsername(@org.springframework.web.bind.annotation.RequestParam("username") String username) {
+//	    System.out.println(username);
+
+        if(username.trim() == "" || username == null) {
+            return "blankusername";
+        }
+
+        boolean isDuplicate = service.checkDuplicateUsername(username);
+        if (isDuplicate) {
+            return "duplicate";
+        } else {
+            return "notduplicate";
+        }
+    }
+
     @GetMapping("/searchlist")
     public String searchlist(@ModelAttribute RequestParam requestParam, @ModelAttribute ReDiscover reDiscover, Model model) throws IOException {
-//        System.out.println(reDiscover);
-
-        // 로그인 인증세션
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication.getPrincipal() == "anonymousUser") {
             return "login";
         }
 
-//        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-//        UserDetails userDetails = (UserDetails)principal;
-//        String username = ((UserDetails) principal).getUsername();
-//        System.out.println(userDetails);
-//        System.out.println(username);
+        // 금칙어 검사 및 처리
+        if (handleBannedKeywords(requestParam, model)) {
+            return "searchlist";
+        }
+
+        // 불용어 검사 및 처리 // 여기부터는 금칙어 검사를 통과했기 때문에 검색에대한 로직 적용시작
 
 
-
-
-
-        // 인기 검색어 10개
-        List<TopKeyword> topKeywordList = esservice.top_search_log();
-
-        // 재검색
+        // 재검색 파라미터 처리
         requestParam = esservice.researchClear(requestParam, reDiscover);
-//        System.out.println("아래가 Test");
-//        System.out.println(requestParam);
-//        System.out.println(reDiscover);
 
-        // 재검색을 고려한 검색 시작.
+        // 검색 결과 조회
         ArticleEnt art = esservice.sampleQuery(requestParam);
 
-        if(art.getHits() != null) {     // 추후 service로 빼기 할일 태산 ..
-            int totalPages = (int) Math.ceil(Double.parseDouble(art.getHits().getTotal().getValue()) / 5);
+        // 페이징 처리
+        if (art.getHits() != null) {
+            int pagesize = 20;
+            int totalPages = esservice.getTotalPages(art.getHits().getTotal().getValue(), pagesize);
             model.addAttribute("totalPages", totalPages);
         }
 
+        // 결과 및 검색 파라미터 전달
+        model.addAttribute("data", art);
+        model.addAttribute("searchparameter", requestParam);
 
-//        System.out.println("art!!!!!!!!!!!!!!");
-//        System.out.println(art);
-        model.addAttribute("data", art);                        // 검색결과 전달
-        model.addAttribute("searchparameter", requestParam);    // 페이징 검색어 등등 ... 전달
-        model.addAttribute("topKeywordList", topKeywordList);   // 인기 검색어 최대 10개 전달..
+        // 인기 검색어 조회
+        List<TopKeyword> topKeywordList = esservice.top_search_log();
+        model.addAttribute("topKeywordList", topKeywordList);
 
-        System.out.println(requestParam);
-//        System.out.println(requestParam);
+        // 오타 교정
+        String typoSuggest = esservice.typoCorrect(requestParam.getSearch());
+        model.addAttribute("typoSuggest", typoSuggest);
+
+        // 수동 추천 리스트
+        handleManualRecommendation(requestParam, model);
+
+        // 자동 추천 검색어
+        String autoRecomm = esservice.autoRecomm(requestParam.getSearch());
+        model.addAttribute("autorecomm", autoRecomm);
 
         return "searchlist";
     }
 
+    // 금칙어 검사 및 처리 로직
+    private boolean handleBannedKeywords(RequestParam requestParam, Model model) throws IOException {
+        BanString banned = new BanString();
+
+        if (!requestParam.getSearch().isEmpty()) {
+            banned = esservice.isBannedSearch_Forbidden(requestParam.getSearch());
+        }
+
+        if (banned.isBanned_forbidden()) {
+            model.addAttribute("isBanned", true);
+            model.addAttribute("bankeyword_forbidden", banned.getBannedKeyWord_forbidden());
+            model.addAttribute("searchparameter", requestParam);
+            model.addAttribute("topKeywordList", esservice.top_search_log());
+            model.addAttribute("data", new ArticleEnt());
+            return true;
+        }
+
+        return false;
+    }
+
+    // 수동 추천 리스트 처리 로직
+    private void handleManualRecommendation(RequestParam requestParam, Model model) throws IOException {
+        if (!requestParam.getSearch().isEmpty()) {
+            RecommManual recomm = esservice.recommManualGet(requestParam.getSearch());
+            model.addAttribute("recommmanual", recomm);
+        }
+    }
+
+    
+    // 자동완성 콘트롤러
     @ResponseBody
     @GetMapping("/getAutoComplete")
     public List<String> getAutoComplete(String searchdata) throws IOException {
 
         List<String> result = esservice.getAutoComplete(searchdata);
-        System.out.println("result: " + result);
+//        System.out.println("result: " + result);
 
         return result;
     }
 
-    @GetMapping("/searchlist/{nttId}")
-    public String searchlistDetail(@PathVariable("nttId") String nttId){
-
-        // 로그인 인증세션
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication.getPrincipal() == "anonymousUser" || authentication.getPrincipal() == null) {
-            System.out.println("비인가 회원");
-            return "redirect:/login/sessionout";
-        }
-
-
-
-        return "";
-    }
 
 
 

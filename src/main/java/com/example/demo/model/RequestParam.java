@@ -31,6 +31,10 @@ public class RequestParam {
     @Builder.Default
     private String category = "전체"; // Default Value = 전체
 
+    @Builder.Default
+    @Min(0)
+    private String period_of_view = "0";
+
     private ReDiscover reDiscoverParam;
 
     private ArrayList<ReDiscover> reDiscoverArr;
