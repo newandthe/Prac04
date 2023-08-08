@@ -5,6 +5,8 @@
   <title>SearchList</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+
+
 </head>
   <style>
     h1 {
@@ -14,6 +16,9 @@
       text-align: center;
     }
 
+   .hidden {
+     display: none;
+   }
 
 
 
@@ -44,6 +49,10 @@
 <input type="hidden" id="searchHidden" th:value="${searchparameter.search}" />
 <input type="hidden" id="searchArr" th:value="${searchparameter.reDiscoverArr}" />
 <input type="hidden" id="categoryHidden" th:value="${searchparameter.category}" />
+<input type="hidden" id="period_of_viewHidden" th:value="${searchparameter.period_of_view}" />
+<input type="hidden" id="typoSuggest" th:value="${typoSuggest}" />
+<!--<input type="hidden" id="autorecomm" th:value="${autorecomm}" />-->
+
 
 <div class="container mt-2">
   <!-- 리스트가 비어있는 경우 메시지 출력 -->
@@ -67,12 +76,13 @@
       </li>
     </ul>
   </div>
+
 </div>
 
 <br/><br/>
 
 
-<div class="border rounded p-3" style="width: 1500px;  height: 1200px; margin: 0 auto;">
+<div class="border rounded p-3" style="width: 1500px;  height: 7000px; margin: 0 auto;">
 
 
   <br/>
@@ -87,7 +97,14 @@
       <br/>
     </div>
 
-    <div class="d-flex align-items-center">
+    <div class="col-md-10" style="height: 50px;">
+      <div class="col-md-2">
+        <p>p tag TEST</p>
+      </div>
+
+
+      <br/><br/>
+    <div class="d-flex">
       <div class="dropdown">
         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           검색 대상
@@ -106,15 +123,44 @@
 
       <input type="text" class="form-control" id="searchparam" th:value="${searchparameter.query}" style="width: 900px;" oninput="AutoComplete()"> &nbsp;&nbsp;
       <button type="button" class="btn btn-outline-secondary" onclick="SearchOption()">검색</button>&nbsp;&nbsp;
-      <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-        <span class="visually-hidden">Toggle Dropdown</span>
-      </button>
+<!--      <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">-->
+<!--        <span class="visually-hidden">Toggle Dropdown</span>-->
+<!--      </button>-->
+    </div>
     </div>
   </div>
+  <br/><br/><br/>
 
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <ul class="list-group" id="autocomplete-results" style="padding-left: 130px; width: 1030px"></ul>
   <br/>
+
+  <div class="dropdown" style="width: 200px;">
+    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownDateButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      조회기간 선택
+    </button>
+    <ul class="dropdown-menu" id="period_of_view" onchange="getValue(this);" th:value="${searchparameter.period_of_view}">
+      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('0')">전체 기간</a></li>
+      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('1')">1일</a></li>
+      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('7')">1주</a></li>
+      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('30')">한달</a></li>
+      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('365')">1년</a></li>
+      <li><a class="dropdown-item" onclick="showDirectInput()">직접입력</a></li>
+    </ul>
+  </div>
+
+  <!-- 직접 입력을 위한 입력 필드 -->
+  <div id="directInput" style="display: none;">
+    <input type="text" id="directInputValue" placeholder="기간을 입력하세요">
+    <button type="button" onclick="setDirectInputValue()">확인</button>
+  </div>
+
+
+
+  <span>선택된 기간: </span> <!-- <span id="periodInnerLine" th:if="${searchparameter.period_of_view == 0}">전체기간</span> -->
+  <span id="periodInnerLine" th:text="${searchparameter.period_of_view}"></span>
+  <span> 일</span>
+
 
   <div class="dropdown" style="width: 200px;">
     <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -136,7 +182,7 @@
       <li><a class="dropdown-item" onclick="setCategoryValue('북한')">북한</a></li>
       <li><a class="dropdown-item" onclick="setCategoryValue('문화')">문화</a></li>
       <li><a class="dropdown-item" onclick="setCategoryValue('라이프')">라이프</a></li>
-      <li><a class="dropdown-item" onclick="setValue('getfilecontent')">경제</a></li>
+      <li><a class="dropdown-item" onclick="setCategoryValue('경제')">경제</a></li>
     </ul>
   </div>
   <span>현재 카테고리 : </span> <span id="categoryInnerLine" th:value="${category}"></span>
@@ -157,29 +203,135 @@
 
 
 
-    <br/><br/>
+    <br/>
+    <span th:if="${typoSuggest != null}" style="font-size: 19px; font-weight: bold">혹시 찾으시는 결과가 이것은 아닌가요?</span>
+    <span th:if="${typoSuggest != null}" th:text="${typoSuggest}" style="font-size: 15px; font-weight: bold"></span>
 
+    <span th:if="${autorecomm != null}" style="font-size: 19px; font-weight: bold">
+      다음과 같이 검색 해보시는건 어떠신가요?(로그기반 자동)
+    </span>
+    <span th:if="${autorecomm != null}" th:text="${autorecomm}" style="font-size: 15px; font-weight: bold"></span>
 
+    <br/>
+    <span th:if="${recommmanual != null}" style="font-size: 19px; font-weight: bold">해당 검색어는 어떠신가요?(사용자지정 수동)
+      <br/>
+        <span th:each="recommendation : ${recommmanual.recomm}">
+            <span th:text="${recommendation}" style="font-size: 15px; font-weight: bold"></span>&nbsp;
+        </span>
+    </span>
+    <br/><br/><br/><br/>
     <h3>검색결과 : <span th:text="${data.hits.total.value}"></span> 건</h3>
 
-  <table class="table">
-    <thead class="table-dark">
-    <th>제목</th>
-    <th>카테고리</th>
-    <th>작성자</th>
-    <th>작성일</th>
-    </thead>
-    <tbody>
-    <tr th:each="item : ${data.hits.hits}">
-      <td th:utext="${item.highlight.getTitle() != null} ? ${item.highlight.getTitle()[0]} : ${item._source.title}">
-        Title
-      </td>
-      <td th:text="${item._source.category}">Category</td>
-      <td th:text="${item._source.author}">Author</td>
-      <td th:text="${item._source.wdate}">Date</td>
-    </tr>
-    </tbody>
-  </table>
+<!--  <table class="table">-->
+<!--    <thead class="table-dark">-->
+<!--    <th>제목</th>-->
+<!--    <th>카테고리</th>-->
+<!--    <th>작성자</th>-->
+<!--    <th>작성일</th>-->
+<!--    </thead>-->
+<!--    <tbody>-->
+<!--    <tr th:each="item : ${data.hits.hits}">-->
+<!--      <td th:utext="${item.highlight.getTitle() != null} ? ${item.highlight.getTitle()[0]} : ${item._source.title}">-->
+<!--        Title-->
+<!--      </td>-->
+<!--      <td th:text="${item._source.category}">Category</td>-->
+<!--      <td th:text="${item._source.author}">Author</td>-->
+<!--      <td th:text="${item._source.wdate}">Date</td>-->
+<!--    </tr>-->
+<!--    </tbody>-->
+<!--  </table>-->
+
+    <div th:each="item : ${data.hits.hits}" style="margin-bottom: 20px;" class="border border-2">
+      <span th:attr="onclick=|openUrl('${item._source.url_link}')|">     <!-- 제목, 링크이동 -->
+        <span th:utext="${item.highlight.getTitle() != null} ? ${item.highlight.getTitle()[0]} : ${item._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></span>
+      </span>
+
+      <br/>
+
+      <I><small>  <!-- 부제목 -->
+            <span th:utext="${item._source.getSub_title() != null} ? ${item._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 -->
+      </span>
+      </small></I>
+
+      <br/>
+      <!-- 내용 출력 -->
+      <span th:if="${item.highlight.getContent() == null}">
+          <span th:utext="${#strings.abbreviate(item._source.content, 330)}"></span>
+      </span>
+
+
+      <!-- 내용의 하이라이트 있는경우 -->
+      <span th:if="${item.highlight.getContent() != null}">
+        <span th:utext="${item.highlight.content[0]}"></span><span>...</span>
+
+      </span>
+
+      <br/><br/>
+    <!-- 파일 제목-->
+
+      <div th:if="${item.highlight.getFilenameOrgHighlight() != null}">
+        <p th:each="fileNameOrg : ${item.highlight.getFilenameOrgHighlight()}">
+          <span th:if="${#strings.contains(fileNameOrg, '.hwp')}">
+              <!-- .hwp 파일인 경우 -->
+              <span th:utext="${fileNameOrg}"></span>
+          </span>
+          <span th:if="${#strings.contains(fileNameOrg, '.pdf')}">
+<!--              &lt;!&ndash; .pdf 파일인 경우 &ndash;&gt;-->
+              <span th:utext="${fileNameOrg}"></span>
+          </span>
+        </p>
+
+        <div style="border: solid 1px cyan; margin-bottom: 20px;" th:if="${item.highlight.getFileContentHighlight() != null}"> <!-- 파일내용 하이라이트 O-->
+          <span th:utext="${#strings.abbreviate(item.highlight.fileContentHighlight[0], 900)}"></span>
+          <span>...</span>
+        </div>
+
+        <div style="border: solid 1px brown; margin-bottom: 20px;" th:if="${item._source._file != null and item.highlight.getFileContentHighlight() == null}"> <!-- 파일내용 하이라이트 X -->
+          <span th:utext="${#strings.abbreviate(item._source._file[0].content, 350)}"></span>
+        </div>
+      </div>
+
+
+
+      <div th:if="${item.highlight.getFilenameOrgHighlight() == null and item._source.getCategory() == '행안부 파일'}">
+        <!-- 파일이름 하이라이트 없는 경우 -->
+        <p th:text="${item._source.getCategory()}"></p>
+          <p th:each="itemNameOrg : ${item._source._file}">
+            <span th:if="${itemNameOrg != null}">
+              <span th:if="${itemNameOrg.getNameOrg() != null}">
+                <span th:text="${itemNameOrg.getNameOrg()}"></span>
+
+                <div style="border: solid 1px cyan; margin-bottom: 20px;" th:if="${item.highlight.getFileContentHighlight() != null}"> <!-- 파일내용 하이라이트 O-->
+                  <span th:utext="${#strings.abbreviate(item.highlight.fileContentHighlight[0], 900)}"></span>
+                  <span>...</span>
+                </div>
+
+                <div style="border: solid 1px brown; margin-bottom: 20px;" th:if="${item._source._file != null and item.highlight.getFileContentHighlight() == null}"> <!-- 파일내용 하이라이트 X -->
+                  <span th:utext="${#strings.abbreviate(item._source._file[0].content, 350)}"></span>
+                </div>
+              </span>
+            </span>
+          </p>
+        </p>
+      </div>
+
+
+
+      <!-- 작성자 | 작성일 -->
+      <div>
+        <span>-- </span><span th:text="${item._source.category}"></span>&nbsp;&nbsp;<span th:text="${item._source.wdate}"></span>
+      </div>
+
+      </div>
+
+
+
+
+      <br/>
+    </div>
+
+
+
 
     <br/><br/>
 
@@ -257,6 +409,9 @@
   var category = document.getElementById('categoryHidden').value;
   document.getElementById("categoryInnerLine").innerText = category;
   var research = document.getElementById('flexSwitchCheckDefault').checked;
+  var period = document.getElementById('period_of_viewHidden').value;
+  document.getElementById("periodInnerLine").innerText = period;
+
 
   // console.log(research, timestamp);
 
@@ -283,11 +438,15 @@
     if (research == undefined){
       research = false;
     }
+    if (period == undefined){
+      period = 0;
+    }
     // alert(choice);
 
     if (research == false){
       var searchValue = encodeURIComponent(search.value);
-      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research + "&category=" + category + "&query=" + searchValue;
+      // alert(period);
+      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research + "&category=" + category + "&query=" + searchValue + "&period_of_view=" + period;
     } else {
       var originSearch = document.getElementById('searchHidden').value;
       var searchValue = encodeURIComponent(search.value);
@@ -295,6 +454,7 @@
       var searchwordRegex = /\[ReDiscover\(searchword=(.*?)\)\]/;
       var matches = receivedData.match(searchwordRegex);
       var searchwords = matches ? matches[1].split(',') : [];
+      // alert(period);
 
       // console.log("추출된 검색어들: ", searchwords);
 
@@ -305,6 +465,8 @@
       }
 
       url += "&category=" + category;
+
+      url += "&period_of_view=" + period;
 
       window.location.href = url;
     }
@@ -441,6 +603,50 @@
     window.location.href = newURL;
   }
 
+  function openUrl(URL){
+    console.log(URL)
+    window.open(URL);
+  }
+
+  function setPeriod_of_viewValue(value) {
+    period = value;
+    console.log(period)
+
+    if(period == 0){
+      document.getElementById("periodInnerLine").innerText = "전체 기간";
+    }
+    else{
+    document.getElementById("periodInnerLine").innerText = period;
+    }
+  }
+
+  function showDirectInput() {
+    var directInputDiv = document.getElementById("directInput");
+    directInputDiv.style.display = "block";
+  }
+
+  function setDirectInputValue() {
+    var inputValue = document.getElementById("directInputValue").value;
+    if (!/^[0-9]+$/.test(inputValue)) {
+      alert("숫자혹은 양수만 입력해주세요.");
+      return;
+    }
+    else if(inputValue.trim() == ""){
+      alert("공백은 불가합니다.");
+      return;
+    }
+
+    document.getElementById("periodInnerLine").innerText = inputValue;
+    period = inputValue;
+    console.log(period);
+    hideDirectInput();
+  }
+
+  function hideDirectInput() {
+    var directInputDiv = document.getElementById("directInput");
+    directInputDiv.style.display = "none";
+  }
+
 
 
 
@@ -454,6 +660,11 @@
   document.getElementById('choice').onchange = function() {
     choice = document.getElementById('choice').value;
   };
+
+  function toggleContent(event) {
+    const contentDiv = event.target.querySelector('.content-box');
+    contentDiv.classList.toggle('hidden');
+  }
 
 
 

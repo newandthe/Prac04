@@ -29,14 +29,14 @@ public class Prac04Repository {
         return member;
     }
 
-    public boolean regiAf(Member member){
+    public int regiAf(Member member){
         try {
             String sql = "INSERT INTO member (username, password) VALUES (?, ?)";
             int n = jdbcTemplate.update(sql, member.getUsername(), member.getPassword());
 
             System.out.println("member: " + member.toString());
 
-            return n > 0;
+            return n;
         } catch (DataAccessException ex){
 
             throw new RuntimeException("회원가입에 실패했습니다.", ex);
@@ -60,5 +60,10 @@ public class Prac04Repository {
         } catch (DataAccessException ex) {
             throw new RuntimeException("유저 아이디 탐색 실패.", ex);
         }
+    }
+
+    public int checkDuplicateUsername(String username) {
+        String query = "SELECT COUNT(*) FROM member WHERE username = ?";
+        return jdbcTemplate.queryForObject(query, Integer.class, username);
     }
 }

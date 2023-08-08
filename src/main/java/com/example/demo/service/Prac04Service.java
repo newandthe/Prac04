@@ -25,4 +25,19 @@ public class Prac04Service {
             return member;
         }
     }
+
+    public boolean checkDuplicateUsername(String username) {
+        int n = repository.checkDuplicateUsername(username);
+        return n>0?true:false;
+    }
+
+    public boolean regiAf(Member member) {
+
+        int n = repository.regiAf(member);
+
+        return n>0?true:false;
+
+    }
+
+
 }
