@@ -7,6 +7,7 @@ import com.example.demo.service.ElasticsearchService;
 import com.example.demo.service.Prac04Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,8 +15,19 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.async.DeferredResult;
 
+import javax.validation.Valid;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 @Controller
@@ -35,6 +47,8 @@ public class Prac04Controller {
 
     @Autowired
     private ElasticsearchService esservice;
+
+    private String resourcePath = "172.30.1.105:22:/data/download/"; // 리소스 경로
 
 
 
@@ -67,10 +81,6 @@ public class Prac04Controller {
             // 현재 스레드의 SecurityContext에 인증 객체 설정
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-//            System.out.println("test!!!!!!");
-//            PrincipalDetails test = (PrincipalDetails) authentication.getPrincipal();
-//            System.out.println(test.getMember());
-//            System.out.println(test.getUsername());
 
 
             return "success";
@@ -129,7 +139,7 @@ public class Prac04Controller {
     }
 
     @GetMapping("/searchlist")
-    public String searchlist(@ModelAttribute RequestParam requestParam, @ModelAttribute ReDiscover reDiscover, Model model) throws IOException {
+    public String searchlist(@ModelAttribute @Valid RequestParam requestParam, @ModelAttribute ReDiscover reDiscover, Model model) throws IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication.getPrincipal() == "anonymousUser") {
             return "login";
@@ -144,10 +154,11 @@ public class Prac04Controller {
 
 
         // 재검색 파라미터 처리
-        requestParam = esservice.researchClear(requestParam, reDiscover);
+        requestParam = esservice.reSearchClear(requestParam, reDiscover);
 
         // 검색 결과 조회
-        ArticleEnt art = esservice.sampleQuery(requestParam);
+        ArticleEnt art = esservice.mainQuery(requestParam);
+
 
         // 페이징 처리
         if (art.getHits() != null) {
@@ -161,24 +172,69 @@ public class Prac04Controller {
         model.addAttribute("searchparameter", requestParam);
 
         // 인기 검색어 조회
-        List<TopKeyword> topKeywordList = esservice.top_search_log();
-        model.addAttribute("topKeywordList", topKeywordList);
+//        List<TopKeyword> topKeywordList = esservice.top_search_log();
+//        model.addAttribute("topKeywordList", topKeywordList);
 
         // 오타 교정
-        String typoSuggest = esservice.typoCorrect(requestParam.getSearch());
-        model.addAttribute("typoSuggest", typoSuggest);
+//        String typoSuggest = esservice.typoCorrect(requestParam.getSearch());
+//        model.addAttribute("typoSuggest", typoSuggest);
 
         // 수동 추천 리스트
-        handleManualRecommendation(requestParam, model);
+//        handleManualRecommendation(requestParam, model);
 
         // 자동 추천 검색어
-        String autoRecomm = esservice.autoRecomm(requestParam.getSearch());
-        model.addAttribute("autorecomm", autoRecomm);
+//        List<String> autoRecomm = esservice.autoRecomm(requestParam.getSearch(), requestParam.getPrevSearch(), requestParam.isResearch());
+//        model.addAttribute("autorecomm", autoRecomm);
+
+
+//        String imageURL = "https://img9.yna.co.kr/etc/inner/KR/2023/06/21/AKR20230621096900052_01_i_P4.jpg";
+//        model.addAttribute("imageURL", imageURL);
 
         return "searchlist";
     }
 
-    // 금칙어 검사 및 처리 로직
+    // 인기 검색어 조회
+    @GetMapping("/getTopKeywordList")
+    @ResponseBody
+    public List<TopKeyword> getTopKeywordList() throws IOException {
+
+        List<TopKeyword> topKeywordList = esservice.top_search_log();
+//        System.out.println(topKeywordList);
+        return topKeywordList;
+    }
+
+    // 오타 교정 AJAX
+    @GetMapping("/getTypoSuggest")
+    @ResponseBody
+    public String getTypoSuggest(String search) throws IOException {
+
+        return esservice.typoCorrect(search);
+    }
+
+    // 자동 추천 AJAX
+    @GetMapping("/getAutoRecommendation")
+    @ResponseBody
+    public List<String> getAutoRecommendation(String search, String prevSearch, Boolean isResearch) throws IOException {
+        List<String> autorecomm = esservice.autoRecomm(search, prevSearch, isResearch);
+
+        return autorecomm;
+    }
+
+
+    // 수동 추천 AJAX
+    @GetMapping("/getManualRecommendation")
+    @ResponseBody
+    public RecommManual getManualRecommendation(String search) throws IOException {
+        RecommManual recomm = new RecommManual();
+        if (!search.isEmpty()) {
+             recomm = esservice.recommManualGet(search);
+        }
+
+        System.out.println("수동추천!!!");
+        return recomm;
+    }
+
+    // 금칙어 검사
     private boolean handleBannedKeywords(RequestParam requestParam, Model model) throws IOException {
         BanString banned = new BanString();
 
@@ -192,21 +248,13 @@ public class Prac04Controller {
             model.addAttribute("searchparameter", requestParam);
             model.addAttribute("topKeywordList", esservice.top_search_log());
             model.addAttribute("data", new ArticleEnt());
+            System.out.println(model.getAttribute("data"));
             return true;
         }
 
         return false;
     }
 
-    // 수동 추천 리스트 처리 로직
-    private void handleManualRecommendation(RequestParam requestParam, Model model) throws IOException {
-        if (!requestParam.getSearch().isEmpty()) {
-            RecommManual recomm = esservice.recommManualGet(requestParam.getSearch());
-            model.addAttribute("recommmanual", recomm);
-        }
-    }
-
-    
     // 자동완성 콘트롤러
     @ResponseBody
     @GetMapping("/getAutoComplete")

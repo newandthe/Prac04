@@ -13,10 +13,10 @@ public class JdbcTemplateConfig {
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setUsername("root");
+        dataSource.setUsername("jsk");
         dataSource.setPassword("1234");
-//        dataSource.setDriverClassName("org.mysql.jdbc.Driver");
-        dataSource.setUrl("jdbc:mysql://localhost:3306/prac01");
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        dataSource.setUrl("jdbc:mysql://172.30.1.100:3306/prac01");
         return dataSource;
     }
 

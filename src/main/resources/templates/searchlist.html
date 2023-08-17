@@ -7,6 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
 
 
+
 </head>
   <style>
     h1 {
@@ -18,6 +19,11 @@
 
    .hidden {
      display: none;
+   }
+
+   .active {
+     font-weight: bold; /* 강조한 텍스트 굵기 변경 */
+     color: blue; /* 텍스트 색상 변경 */
    }
 
 
@@ -38,6 +44,13 @@
   <a class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href="/logout">
     로그아웃
   </a>
+
+<!--  <img src="/data/download/08421c8462bca0de9886172cb655110ef22a921bc5ec34c46a33af1b0b302bab/08421c8462bca0de9886172cb655110ef22a921bc5ec34c46a33af1b0b302bab_0.jpg">-->
+
+
+
+
+
 </div>
 <hr />
 <!-- <p th:text="${totalPages}"></p><p>totalPages</p> -->
@@ -50,42 +63,92 @@
 <input type="hidden" id="searchArr" th:value="${searchparameter.reDiscoverArr}" />
 <input type="hidden" id="categoryHidden" th:value="${searchparameter.category}" />
 <input type="hidden" id="period_of_viewHidden" th:value="${searchparameter.period_of_view}" />
-<input type="hidden" id="typoSuggest" th:value="${typoSuggest}" />
+<!--<input type="hidden" id="typoSuggest" th:value="${typoSuggest}"/>-->
+<!--<input type="hidden" id="prevSearchHidden" th:value="${prevSearch}" />-->
 <!--<input type="hidden" id="autorecomm" th:value="${autorecomm}" />-->
 
+<div>
 
-<div class="container mt-2">
-  <!-- 리스트가 비어있는 경우 메시지 출력 -->
-  <div th:if="${topKeywordList.isEmpty()}">
-    <p>검색된 로그가 없습니다.</p>
+  <div class="container mt-2" style="float: left; width: 250px; margin-top: 50px; margin-left: 50px;">
+    <!-- 리스트가 비어있는 경우 메시지 출력 -->
+    <div id="emptyTopKeywordsMessage" style="display: none;">
+      <p>검색된 로그가 없습니다.</p>
+    </div>
+
+    <!-- 리스트가 비어있지 않은 경우 -->
+    <div id="topKeywordsList" style="width: 250px; display: inline;">
+      <h3>인기 검색어</h3>
+      <ul class="list-group" style="width: 250px;">
+        <!-- 인기 검색어들이 추가될 위치 -->
+      </ul>
+    </div>
   </div>
-
-  <!-- 리스트가 비어있지 않은 경우 -->
-  <div th:if="${not topKeywordList.isEmpty()}">
-    <h3>인기 검색어</h3>
-    <ul class="list-group">
-      <li th:each="keyword : ${topKeywordList}" class="list-group-item justify-content-between align-items-center" style="max-width: 230px;">
-        <!-- keyword 객체의 필드 값을 사용 -->
-        <div class="d-flex">
-          <span style="font-weight: bold">"</span>
-          <span class="truncate-text" th:text="${keyword.key}"></span>
-          <span style="font-weight: bold">"</span> &nbsp;
-          <span th:text="${keyword.doc_count}" style="text-align: right; font-weight: bold"></span>
-          <span> 회</span>
-        </div>
-      </li>
-    </ul>
-  </div>
-
-</div>
 
 <br/><br/>
 
 
-<div class="border rounded p-3" style="width: 1500px;  height: 7000px; margin: 0 auto;">
+<div class="border rounded p-3" style="width: 1500px;  height: auto; margin: 0 auto;">
 
 
   <br/>
+  <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
+    <div class="container-fluid">
+      <a class="navbar-brand" onclick="SelectNavMenu('전체')" style="cursor: pointer">전체</a>
+      <div class="collapse navbar-collapse" id="navbarNavDropdown">
+        <ul class="navbar-nav" style="margin-left: 15px;">
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '행안부 이미지' ? 'active' : ''}" onclick="SelectNavMenu('행안부 이미지')">행안부 이미지</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '행안부 파일' ? 'active' : ''}" onclick="SelectNavMenu('행안부 파일')">행안부 파일</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '정치' ? 'active' : ''}" onclick="SelectNavMenu('정치')">정치</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '전국' ? 'active' : ''}" onclick="SelectNavMenu('전국')">전국</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '오피니언' ? 'active' : ''}" onclick="SelectNavMenu('오피니언')">오피니언</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+          <a class="nav-link" th:classappend="${searchparameter.category == '연예' ? 'active' : ''}" onclick="SelectNavMenu('연예')">연예</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '스포츠' ? 'active' : ''}" onclick="SelectNavMenu('스포츠')">스포츠</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+           <a class="nav-link" th:classappend="${searchparameter.category == '세계' ? 'active' : ''}" onclick="SelectNavMenu('세계')">세계</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '산업' ? 'active' : ''}" onclick="SelectNavMenu('산업')">산업</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '사회' ? 'active' : ''}" onclick="SelectNavMenu('사회')">사회</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '사람들' ? 'active' : ''}" onclick="SelectNavMenu('사람들')">사람들</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '북한' ? 'active' : ''}" onclick="SelectNavMenu('북한')">북한</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '문화' ? 'active' : ''}" onclick="SelectNavMenu('문화')">문화</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '라이프' ? 'active' : ''}" onclick="SelectNavMenu('라이프')">라이프</a>
+          </li>
+          <li class="nav-item" style="cursor: pointer">
+            <a class="nav-link" th:classappend="${searchparameter.category == '경제' ? 'active' : ''}" onclick="SelectNavMenu('경제')">경제</a>
+          </li>
+
+
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <br/>
+
   <!-- 검색 및 정렬 -->
   <div class="row">
     <div class="col-md-2" style="width: 150px;">
@@ -98,152 +161,625 @@
     </div>
 
     <div class="col-md-10" style="height: 50px;">
-      <div class="col-md-2">
-        <p>p tag TEST</p>
+      <div class="col-md-2" th:if="${searchparameter.prevSearch != null and searchparameter.prevSearch != ''}" style="width: 500px;">
+        <span>이전 검색어: </span><span th:text="${searchparameter.prevSearch}"></span>
+      </div>
+    </div>
+  </div>
+
+
+
+      <div style="width: 150px;">
+        <select class="form-select" aria-label="Default select example" id="dropdownDateButton" onchange="setPeriod_of_viewValue(this.value);">
+          <option value=0 th:selected="${searchparameter.period_of_view == 0 }">전체 기간</option>
+          <option value=1 th:selected="${searchparameter.period_of_view==1}">1일</option>
+          <option value=7 th:selected="${searchparameter.period_of_view==7}">7일</option>
+          <option value=30 th:selected="${searchparameter.period_of_view==30}">30일</option>
+          <option value=365 th:selected="${searchparameter.period_of_view==365}">365일</option>
+          <option value=직접선택>직접선택</option>
+        </select>
       </div>
 
 
-      <br/><br/>
+      <!-- 직접 입력을 위한 입력 필드 -->
+      <div id="directInput" style="display: none;">
+        <input type="text" id="directInputValue" placeholder="기간을 입력하세요">
+        <button type="button" onclick="setDirectInputValue()">확인</button>
+      </div>
+
+
+      <div id="periodInnerLineText" style="display: none">
+        <span>선택된 기간: </span>
+        <span id="periodInnerLine" th:text="${searchparameter.period_of_view}"></span>
+        <span> 일</span>
+        <br/>
+      </div>
+
+  <br/>
+
+      <div class="" style="width: 150px;">
+        <select class="form-select" aria-label="Default select example" id="dropdownMenuButton" onchange="setCategoryValue(this.value);">
+          <option value="전체" th:selected="${searchparameter.category=='전체'}">전체</option>
+          <option value="행안부 이미지" th:selected="${searchparameter.category=='행안부 이미지'}">행안부 이미지</option>
+          <option value="행안부 파일" th:selected="${searchparameter.category=='행안부 파일'}">행안부 파일</option>
+          <option th:value="정치" th:selected="${searchparameter.category=='정치'}">정치</option>
+          <option th:value="전국" th:selected="${searchparameter.category=='전국'}">전국</option>
+          <option th:value="오피니언" th:selected="${searchparameter.category=='오피니언'}">오피니언</option>
+          <option th:value="연예" th:selected="${searchparameter.category=='연예'}">연예</option>
+          <option th:value="스포츠" th:selected="${searchparameter.category=='스포츠'}">스포츠</option>
+          <option th:value="세계" th:selected="${searchparameter.category=='세계'}">세계</option>
+          <option th:value="산업" th:selected="${searchparameter.category=='산업'}">산업</option>
+          <option th:value="사회" th:selected="${searchparameter.category=='사회'}">사회</option>
+          <option th:value="사람들" th:selected="${searchparameter.category=='사람들'}">사람들</option>
+          <option th:value="북한" th:selected="${searchparameter.category=='북한'}">북한</option>
+          <option th:value="문화" th:selected="${searchparameter.category=='문화'}">문화</option>
+          <option th:value="라이프" th:selected="${searchparameter.category=='라이프'}">라이프</option>
+          <option th:value="경제" th:selected="${searchparameter.category=='경제'}">경제</option>
+        </select>
+        <br/>
+      </div>
+
+
     <div class="d-flex">
-      <div class="dropdown">
-        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          검색 대상
-        </button>
-        &nbsp;&nbsp;
-        <ul class="dropdown-menu dropdown-menu-end" id="target" onchange="getValue(this);" th:value="${target}">
-          <li><a class="dropdown-item" onclick="setValue('getall')">전체</a></li>
-          <li><a class="dropdown-item" onclick="setValue('gettitle')">제목</a></li>
-          <li><a class="dropdown-item" onclick="setValue('getcontent')">내용</a></li>
-          <li><a class="dropdown-item" onclick="setValue('getfilename')">파일 이름</a></li>
-          <li><a class="dropdown-item" onclick="setValue('getfilecontent')">파일 내용</a></li>
-        </ul>
+      <div class="col-md-2" style="width: 150px; height: 38px">
+        <select class="form-select" aria-label="Default select example" id="target" onchange="setValue(this.value);" th:field="${searchparameter.target}" th:value="${searchparameter.target}">
+          <option th:value="getall" th:selected="${target=='getall'}">전체 검색</option>
+          <option th:value="gettitle" th:selected="${target=='gettitle'}">제목</option>
+          <option th:value="getcontent" th:selected="${target=='getcontent'}">내용</option>
+          <option th:value="getfilename" th:selected="${target=='getfilename'}">파일 이름</option>
+          <option th:value="getfilecontent" th:selected="${target=='getfilecontent'}">파일 내용</option>
+        </select>
+        <br/>
       </div>
+      &nbsp;
+<!--      <div class="dropdown">-->
+<!--        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">-->
+<!--          검색 대상-->
+<!--        </button>-->
+<!--        &nbsp;&nbsp;-->
+<!--        <ul class="dropdown-menu dropdown-menu-end" id="target" onchange="getValue(this);" th:value="${target}">-->
+<!--          <li><a class="dropdown-item" onclick="setValue('getall')">전체</a></li>-->
+<!--          <li><a class="dropdown-item" onclick="setValue('gettitle')">제목</a></li>-->
+<!--          <li><a class="dropdown-item" onclick="setValue('getcontent')">내용</a></li>-->
+<!--          <li><a class="dropdown-item" onclick="setValue('getfilename')">파일 이름</a></li>-->
+<!--          <li><a class="dropdown-item" onclick="setValue('getfilecontent')">파일 내용</a></li>-->
+<!--        </ul>-->
+<!--      </div>-->
 
 
 
-      <input type="text" class="form-control" id="searchparam" th:value="${searchparameter.query}" style="width: 900px;" oninput="AutoComplete()"> &nbsp;&nbsp;
-      <button type="button" class="btn btn-outline-secondary" onclick="SearchOption()">검색</button>&nbsp;&nbsp;
+      <input type="text" class="form-control" id="searchparam" th:value="${searchparameter.query}" style="width: 900px; height: 38px;" oninput="AutoComplete()"> &nbsp;&nbsp;
+      <button type="button" class="btn btn-outline-secondary" onclick="SearchOption()" style="height: 38px">검색</button>&nbsp;&nbsp;
 <!--      <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">-->
 <!--        <span class="visually-hidden">Toggle Dropdown</span>-->
 <!--      </button>-->
     </div>
-    </div>
-  </div>
-  <br/><br/><br/>
-
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <ul class="list-group" id="autocomplete-results" style="padding-left: 130px; width: 1030px"></ul>
+  <ul class="list-group" id="autocomplete-results" style="padding-left: 155px; width: 1055px"></ul>
   <br/>
 
-  <div class="dropdown" style="width: 200px;">
-    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownDateButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      조회기간 선택
-    </button>
-    <ul class="dropdown-menu" id="period_of_view" onchange="getValue(this);" th:value="${searchparameter.period_of_view}">
-      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('0')">전체 기간</a></li>
-      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('1')">1일</a></li>
-      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('7')">1주</a></li>
-      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('30')">한달</a></li>
-      <li><a class="dropdown-item" onclick="setPeriod_of_viewValue('365')">1년</a></li>
-      <li><a class="dropdown-item" onclick="showDirectInput()">직접입력</a></li>
-    </ul>
-  </div>
-
-  <!-- 직접 입력을 위한 입력 필드 -->
-  <div id="directInput" style="display: none;">
-    <input type="text" id="directInputValue" placeholder="기간을 입력하세요">
-    <button type="button" onclick="setDirectInputValue()">확인</button>
-  </div>
 
 
-
-  <span>선택된 기간: </span> <!-- <span id="periodInnerLine" th:if="${searchparameter.period_of_view == 0}">전체기간</span> -->
-  <span id="periodInnerLine" th:text="${searchparameter.period_of_view}"></span>
-  <span> 일</span>
-
-
-  <div class="dropdown" style="width: 200px;">
-    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      카테고리 선택
-    </button>
-    <ul class="dropdown-menu" id="category" onchange="getValue(this);" th:value="${category}">
-      <li><a class="dropdown-item" onclick="setCategoryValue('전체')">전체 카테고리</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('행안부 파일')">행안부 파일</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('행안부 이미지')">행안부 이미지</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('정치')">정치</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('전국')">전국</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('오피니언')">오피니언</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('연예')">연예</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('스포츠')">스포츠</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('세계')">세계</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('산업')">산업</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('사회')">사회</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('사람들')">사람들</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('북한')">북한</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('문화')">문화</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('라이프')">라이프</a></li>
-      <li><a class="dropdown-item" onclick="setCategoryValue('경제')">경제</a></li>
-    </ul>
-  </div>
-  <span>현재 카테고리 : </span> <span id="categoryInnerLine" th:value="${category}"></span>
+<!-- 카테고리 메뉴탭 -->
+  <div th:if="${searchparameter.category == '전체' and (#strings.trim(searchparameter.query) == '' or searchparameter.query == null)}">
 
   <!-- 검색 결과물이 있는 경우에만 아래 출력 -->
-  <div th:if="${data.hits != null and not #lists.isEmpty(data.hits.hits)}">
+  <div th:if="${data.aggregations != null and not #lists.isEmpty(data.aggregations.categories.buckets)}">
 
-    <!-- 결과 내 재 검색 버튼 -->
-    <div class="form-check form-switch" style="display: flex; justify-content: flex-end; margin-right: 50px;">
-      <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" th:checked="${searchparameter.research}" onclick="updateReSearch()">
-      <span>&nbsp;&nbsp;</span>
-      <label class="form-check-label" for="flexSwitchCheckDefault">결과 내 전체 재검색</label>
+    <br/>
+
+    <div th:each="bucket : ${data.aggregations.categories.buckets}">
+      <div th:switch="${bucket.key}">
+        <!-- 행안부 이미지일 경우 -->
+        <div th:case="'행안부 이미지'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>행안부 이미지</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=행안부 이미지&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+              <I><small>  <!-- 부제목 -->
+                <span th:utext="${hit._source.sub_title != null} ? ${item._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+              </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+
+
+                <br/>
+                <br/>
+                <img th:src="${hit._source._file[0].path}" style="height: 200px;">
+
+
+
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 행안부 파일일 경우 -->
+        <div th:case="'행안부 파일'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>행안부 파일</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=행안부 파일&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.sub_title} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+
+                <br/><br/><br/>
+
+                <p th:each="fileNameOrg : ${hit._source._file}">
+                <span th:if="${#strings.contains(fileNameOrg, '.hwp')}">
+                    <!-- .hwp 파일인 경우 -->
+                    <span th:text="${fileNameOrg.nameOrg}"></span>
+                </span>
+                  <span th:if="${#strings.contains(fileNameOrg, '.pdf')}">
+                    <!-- .pdf 파일인 경우 -->
+                    <span th:text="${fileNameOrg.nameOrg}"></span>
+                </span>
+
+                <br/>
+                <div style="border: solid 1px brown; margin-bottom: 20px;">
+                  <span th:text="${#strings.abbreviate(hit._source._file[0].preView, 350)}"></span>
+                </div>
+                </p>
+
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- yhn 정치일 경우 -->
+        <div th:case="'정치'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>정치</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=정치&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 전국일 경우 -->
+        <div th:case="'전국'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>전국</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=전국&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 오피니언일 경우 -->
+        <div th:case="'오피니언'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>오피니언</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=오피니언&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 연예일 경우 -->
+        <div th:case="'연예'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>연예</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=연예&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 스포츠일 경우 -->
+        <div th:case="'스포츠'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>스포츠</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=스포츠&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 세계일 경우 -->
+        <div th:case="'세계'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>세계</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=세계&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 산업일 경우 -->
+        <div th:case="'산업'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>산업</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=산업&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 사회일 경우 -->
+        <div th:case="'사회'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>사회</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=사회&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 사람들일 경우 -->
+        <div th:case="'사람들'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>사람들</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=사람들&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 북한일 경우 -->
+        <div th:case="'북한'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>북한</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=북한&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 문화일 경우 -->
+        <div th:case="'문화'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>문화</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=문화&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 라이프일 경우 -->
+        <div th:case="'라이프'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>라이프</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=라이프&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- yhn 경제일 경우 -->
+        <div th:case="'경제'">
+          <div class="border border-2" style="margin-bottom: 50px;">
+            <h1>경제</h1>
+            <br/>
+            <span><h4 th:text="${bucket.doc_count} + ' ' +건" style="display: inline-flex;"></h4> <a href="/searchlist?page=1&choice=accuracyorderby&search=&target=getall&research=false&category=경제&query=&period_of_view=0&prevSearch=" style="display: inline-block; float: right; float: inherit;">이동하기</a> </span>
+            <div th:each="hit : ${bucket.top_documents.hits.hits}">
+              <div class="border border-1" style="margin: 10px;">
+                <span th:attr="onclick=|openUrl('${hit._source.url_link}')|">     <!-- 제목, 링크이동 -->
+                  <p th:text="${hit._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></p>
+                </span>
+                <I><small>  <!-- 부제목 -->
+                  <span th:utext="${hit._source.sub_title != null} ? ${hit._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 --></span>
+                </small></I>
+                <span th:utext="${#strings.abbreviate(hit._source.content, 400)}"></span> <!-- content -->
+                <br/>
+                <div th:if="${hit._source.file_src != null and hit._source.category != '행안부 파일' and hit._source.category != '행안부 이미지'}">
+                  <img th:if="${hit._source.file_src != null and hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src.substring(0, hit._source.file_src.indexOf(','))}"
+                       alt="Image" style="height: 200px;">
+                  <img th:if="${hit._source.file_src == null or not hit._source.file_src.contains(',')}"
+                       th:src="${hit._source.file_src}" alt="Image" style="height: 200px;">
+                </div>
+
+                <br/>
+                <div>
+                  <span>-- </span><span th:text="${hit._source.category}"></span>&nbsp;<span th:text="${hit._source.author}"></span>&nbsp;<span th:text="${hit._source.wdate}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <br/>
-
-
-
-
-
-    <br/>
-    <span th:if="${typoSuggest != null}" style="font-size: 19px; font-weight: bold">혹시 찾으시는 결과가 이것은 아닌가요?</span>
-    <span th:if="${typoSuggest != null}" th:text="${typoSuggest}" style="font-size: 15px; font-weight: bold"></span>
-
-    <span th:if="${autorecomm != null}" style="font-size: 19px; font-weight: bold">
-      다음과 같이 검색 해보시는건 어떠신가요?(로그기반 자동)
-    </span>
-    <span th:if="${autorecomm != null}" th:text="${autorecomm}" style="font-size: 15px; font-weight: bold"></span>
-
-    <br/>
-    <span th:if="${recommmanual != null}" style="font-size: 19px; font-weight: bold">해당 검색어는 어떠신가요?(사용자지정 수동)
-      <br/>
-        <span th:each="recommendation : ${recommmanual.recomm}">
-            <span th:text="${recommendation}" style="font-size: 15px; font-weight: bold"></span>&nbsp;
-        </span>
-    </span>
-    <br/><br/><br/><br/>
-    <h3>검색결과 : <span th:text="${data.hits.total.value}"></span> 건</h3>
-
-<!--  <table class="table">-->
-<!--    <thead class="table-dark">-->
-<!--    <th>제목</th>-->
-<!--    <th>카테고리</th>-->
-<!--    <th>작성자</th>-->
-<!--    <th>작성일</th>-->
-<!--    </thead>-->
-<!--    <tbody>-->
-<!--    <tr th:each="item : ${data.hits.hits}">-->
-<!--      <td th:utext="${item.highlight.getTitle() != null} ? ${item.highlight.getTitle()[0]} : ${item._source.title}">-->
-<!--        Title-->
-<!--      </td>-->
-<!--      <td th:text="${item._source.category}">Category</td>-->
-<!--      <td th:text="${item._source.author}">Author</td>-->
-<!--      <td th:text="${item._source.wdate}">Date</td>-->
-<!--    </tr>-->
-<!--    </tbody>-->
-<!--  </table>-->
 
     <div th:each="item : ${data.hits.hits}" style="margin-bottom: 20px;" class="border border-2">
       <span th:attr="onclick=|openUrl('${item._source.url_link}')|">     <!-- 제목, 링크이동 -->
+        <span th:if="${item.highlight != null}">   <!-- 하이라이트가 null이 아니라면 검색어 있는 상태로 조회 -->
         <span th:utext="${item.highlight.getTitle() != null} ? ${item.highlight.getTitle()[0]} : ${item._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></span>
+        </span>
+        <span th:if="${item.highlight == null}">   <!-- 하이라이트가 null이면 검색어 없이 조회 -->
+          <span th:utext="${item._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></span>
+        </span>
       </span>
 
       <br/>
@@ -255,6 +791,7 @@
 
       <br/>
       <!-- 내용 출력 -->
+      <span th:if="${item.highlight != null}">
       <span th:if="${item.highlight.getContent() == null}">
           <span th:utext="${#strings.abbreviate(item._source.content, 330)}"></span>
       </span>
@@ -263,12 +800,18 @@
       <!-- 내용의 하이라이트 있는경우 -->
       <span th:if="${item.highlight.getContent() != null}">
         <span th:utext="${item.highlight.content[0]}"></span><span>...</span>
+      </span>
+      </span>
 
+      <span th:if="${item.highlight == null}">   <!-- 빈칸 검색인 경우 -->
+        <div>
+          <span th:utext="${#strings.abbreviate(item._source.content, 330)}"></span>
+        </div>
       </span>
 
       <br/><br/>
-    <!-- 파일 제목-->
-
+    <!-- 파일 제목 -->
+      <div th:if="${item.highlight != null}">
       <div th:if="${item.highlight.getFilenameOrgHighlight() != null}">
         <p th:each="fileNameOrg : ${item.highlight.getFilenameOrgHighlight()}">
           <span th:if="${#strings.contains(fileNameOrg, '.hwp')}">
@@ -295,11 +838,11 @@
 
       <div th:if="${item.highlight.getFilenameOrgHighlight() == null and item._source.getCategory() == '행안부 파일'}">
         <!-- 파일이름 하이라이트 없는 경우 -->
-        <p th:text="${item._source.getCategory()}"></p>
-          <p th:each="itemNameOrg : ${item._source._file}">
+        <p th:each="itemNameOrg : ${item._source._file}">
             <span th:if="${itemNameOrg != null}">
               <span th:if="${itemNameOrg.getNameOrg() != null}">
-                <span th:text="${itemNameOrg.getNameOrg()}"></span>
+                <span th:remove="tag" th:text="${itemNameOrg.getNameOrg()}"
+                      th:if="${#strings.endsWith(itemNameOrg.getNameOrg(), '.hwp') or #strings.endsWith(itemNameOrg.getNameOrg(), '.pdf')}"></span>
 
                 <div style="border: solid 1px cyan; margin-bottom: 20px;" th:if="${item.highlight.getFileContentHighlight() != null}"> <!-- 파일내용 하이라이트 O-->
                   <span th:utext="${#strings.abbreviate(item.highlight.fileContentHighlight[0], 900)}"></span>
@@ -311,9 +854,50 @@
                 </div>
               </span>
             </span>
-          </p>
+        </p>
         </p>
       </div>
+      </div>
+
+
+      <div th:if="${item.highlight == null and item._source.getCategory() == '행안부 파일'}">
+<!--        <p th:text="${item._source.getCategory()}"></p>-->
+        <p th:each="itemNameOrg : ${item._source._file}">
+          <span th:if="${itemNameOrg != null}">
+              <span th:if="${itemNameOrg.getNameOrg() != null}">
+                  <span th:if="${#strings.endsWith(itemNameOrg.getNameOrg(), '.hwp') or #strings.endsWith(itemNameOrg.getNameOrg(), '.pdf')}">
+                      <span th:remove="tag" th:text="${itemNameOrg.getNameOrg()}"></span>
+                      <div style="border: solid 1px brown; margin-bottom: 20px;">
+                          <!-- 파일내용 하이라이트 X -->
+                          <span th:utext="${#strings.abbreviate(item._source._file[0].content, 350)}"></span>
+                      </div>
+                  </span>
+              </span>
+          </span>
+        </p>
+      </div>
+
+    <!-- 이미지 -->
+      <!-- 연합뉴스 -->
+<!--      <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">-->
+<!--        &lt;!&ndash; 이미지 URL을 세 번 연속 쉼표로 분할하여 여러 개의 URL을 가져옴 &ndash;&gt;-->
+<!--        <th:block th:each="url : ${#strings.arraySplit(item._source.getFile_src(item._source.getFile_src()), ',,,')}">-->
+<!--          &lt;!&ndash; 쉼표 이전까지의 URL을 추출하여 사용 &ndash;&gt;-->
+<!--          <th:block th:if="${url != null}">-->
+<!--            <img th:src="${url}" alt="Image" style="height: 200px;">-->
+<!--          </th:block>-->
+<!--        </th:block>-->
+<!--      </div>-->
+      <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">
+        <img th:if="${item._source.file_src != null and item._source.file_src.contains(',')}"
+             th:src="${item._source.file_src.substring(0, item._source.file_src.indexOf(','))}"
+             alt="Image" style="height: 200px;">
+        <img th:if="${item._source.file_src == null or not item._source.file_src.contains(',')}"
+             th:src="${item._source.file_src}" alt="Image" style="height: 200px;">
+      </div>
+
+
+
 
 
 
@@ -322,75 +906,285 @@
         <span>-- </span><span th:text="${item._source.category}"></span>&nbsp;&nbsp;<span th:text="${item._source.wdate}"></span>
       </div>
 
+
+
       </div>
 
 
 
 
+
+      <br/><br/>
+  </div>
+
+  </div>
+
+  <!-- 오타교정 비동기 -->
+  <p id="resultText" style="font-size: 19px; font-weight: bold; display: none;">혹시 찾으시는 결과가 이것은 아닌가요?</p>
+  <a id="resultLink" style="display: none;">
+    <span style="font-size: 15px; font-weight: bold; cursor: pointer;" id="typoSuggest"></span>
+    <br/>
+  </a>
+
+
+  <p id="autoRecommList" style="font-size: 19px; font-weight: bold">
+    <br/>
+
+  </p>
+
+
+  <br/><br/>
+
+  <!-- 수동 추천 비동기 -->
+  <p id="recommList" style="font-size: 19px; font-weight: bold">
+
+    <br/>
+  </p>
+
+  <br/><br/><br/><br/>
+  <div th:if="${data.hits != null} and (${searchparameter.category != '전체'} or ${searchparameter.search != ''})">
+  <h3>검색결과 : <span th:text="${data.hits.total.value}"></span> 건</h3>
+  </div>
+
+
+
+
+
+
+<!--  검색결과 창 -->
+  <div th:if="${#strings.trim(searchparameter.query) != null}" >
+
+    <!-- 검색 결과물이 있는 경우에만 아래 출력 -->
+    <div th:if="${data.hits != null and not #lists.isEmpty(data.hits.hits)}">
+
+
+      <!-- 결과 내 재 검색 버튼 -->
+      <div class="form-check form-switch" style="display: flex; justify-content: flex-end; margin-right: 50px;" th:if="${searchparameter.search != ''}">
+        <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" th:checked="${searchparameter.research}" onclick="updateReSearch()">
+        <span>&nbsp;&nbsp;</span>
+        <label class="form-check-label" for="flexSwitchCheckDefault">결과 내 전체 재검색</label>
+      </div>
+
+
       <br/>
-    </div>
 
 
 
 
-    <br/><br/>
 
-    <!-- Pagination Logic -->
-    <!-- 동적 할당 하기 위해서 지역변수 선언 -->
-    <div th:with="choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target}">
-      <!-- 파지네이션 -->
-      <nav aria-label="Page navigation" th:if="${totalPages > 0}">
-        <ul class="pagination justify-content-center">
-          <li class="page-item">
-            <a class="page-link" href="#" aria-label="Previous" onclick="goToFirstPage(event)">
-              <span aria-hidden="true">&laquo;</span>
-              <span class="sr-only">First</span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="#" aria-label="Previous" onclick="goToPrev(event)">
-              <span aria-hidden="true"><</span>
-              <span class="sr-only">Previous</span>
-            </a>
-          </li>
-          <!-- 페이지 링크를 동적으로 생성 -->
-          <!-- 현재 페이지 그룹 계산 -->
-          <th:block th:with="currentPageGroup=${(searchparameter.page - 1) / 10}">
-            <li class="page-item" th:each="page : ${#numbers.sequence((currentPageGroup * 10) + 1, (currentPageGroup * 10) + 10)}"
-                th:if="${page} &lt;= ${totalPages}">
-              <a class="page-link" href="#" th:text="${page}" onclick="goToPage(this.innerText)"></a>
+      <br/>
+      <!--    <p th:if="${typoSuggest != null}" style="font-size: 19px; font-weight: bold">혹시 찾으시는 결과가 이것은 아닌가요?</p>-->
+      <!--      <a th:attr="onclick='setAndSearch(\'' + ${typoSuggest} + '\')'">-->
+      <!--        <span th:if="${typoSuggest != null}" th:text="${typoSuggest}" style="font-size: 15px; font-weight: bold; cursor: pointer;"></span>-->
+      <!--      </a>-->
+
+
+
+
+      <div th:each="item : ${data.hits.hits}" style="margin-bottom: 20px;" class="border border-2">
+      <span th:attr="onclick=|openUrl('${item._source.url_link}')|">     <!-- 제목, 링크이동 -->
+        <span th:if="${item.highlight != null}">   <!-- 하이라이트가 null이 아니라면 검색어 있는 상태로 조회 -->
+        <span th:utext="${item.highlight.getTitle() != null} ? ${item.highlight.getTitle()[0]} : ${item._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></span>
+        </span>
+        <span th:if="${item.highlight == null}">   <!-- 하이라이트가 null이면 검색어 없이 조회 -->
+          <span th:utext="${item._source.title}" style="cursor: pointer; color: royalblue; font-size: 1.5em;"></span>
+        </span>
+      </span>
+
+        <br/>
+
+        <I><small>  <!-- 부제목 -->
+          <span th:utext="${item._source.getSub_title() != null} ? ${item._source.getSub_title()} : ''"> <!-- SubTitle 이 존재하는 경우 -->
+      </span>
+        </small></I>
+
+        <br/>
+        <!-- 내용 출력 -->
+        <span th:if="${item.highlight != null}">
+      <span th:if="${item.highlight.getContent() == null}">
+          <span th:utext="${#strings.abbreviate(item._source.content, 330)}"></span>
+      </span>
+
+
+          <!-- 내용의 하이라이트 있는경우 -->
+      <span th:if="${item.highlight.getContent() != null}">
+        <span th:utext="${item.highlight.content[0]}"></span><span>...</span>
+      </span>
+      </span>
+
+        <span th:if="${item.highlight == null}">   <!-- 빈칸 검색인 경우 -->
+        <div>
+          <span th:utext="${#strings.abbreviate(item._source.content, 330)}"></span>
+        </div>
+      </span>
+
+        <br/><br/>
+        <!-- 파일 제목 -->
+        <div th:if="${item.highlight != null}">
+          <div th:if="${item.highlight.getFilenameOrgHighlight() != null}">
+            <p th:each="fileNameOrg : ${item.highlight.getFilenameOrgHighlight()}">
+          <span th:if="${#strings.contains(fileNameOrg, '.hwp')}">
+              <!-- .hwp 파일인 경우 -->
+              <span th:utext="${fileNameOrg}"></span>
+          </span>
+              <span th:if="${#strings.contains(fileNameOrg, '.pdf')}">
+<!--              &lt;!&ndash; .pdf 파일인 경우 &ndash;&gt;-->
+              <span th:utext="${fileNameOrg}"></span>
+          </span>
+            </p>
+
+            <div style="border: solid 1px cyan; margin-bottom: 20px;" th:if="${item.highlight.getFileContentHighlight() != null}"> <!-- 파일내용 하이라이트 O-->
+              <span th:utext="${#strings.abbreviate(item.highlight.fileContentHighlight[0], 900)}"></span>
+              <span>...</span>
+            </div>
+
+            <div style="border: solid 1px brown; margin-bottom: 20px;" th:if="${item._source._file != null and item.highlight.getFileContentHighlight() == null}"> <!-- 파일내용 하이라이트 X -->
+              <span th:utext="${#strings.abbreviate(item._source._file[0].content, 350)}"></span>
+            </div>
+          </div>
+
+
+
+          <div th:if="${item.highlight.getFilenameOrgHighlight() == null and item._source.getCategory() == '행안부 파일'}">
+            <!-- 파일이름 하이라이트 없는 경우 -->
+            <p th:each="itemNameOrg : ${item._source._file}">
+            <span th:if="${itemNameOrg != null}">
+              <span th:if="${itemNameOrg.getNameOrg() != null}">
+                <span th:remove="tag" th:text="${itemNameOrg.getNameOrg()}"
+                      th:if="${#strings.endsWith(itemNameOrg.getNameOrg(), '.hwp') or #strings.endsWith(itemNameOrg.getNameOrg(), '.pdf')}"></span>
+
+                <div style="border: solid 1px cyan; margin-bottom: 20px;" th:if="${item.highlight.getFileContentHighlight() != null}"> <!-- 파일내용 하이라이트 O-->
+                  <span th:utext="${#strings.abbreviate(item.highlight.fileContentHighlight[0], 900)}"></span>
+                  <span>...</span>
+                </div>
+
+                <div style="border: solid 1px brown; margin-bottom: 20px;" th:if="${item._source._file != null and item.highlight.getFileContentHighlight() == null}"> <!-- 파일내용 하이라이트 X -->
+                  <span th:utext="${#strings.abbreviate(item._source._file[0].content, 350)}"></span>
+                </div>
+              </span>
+            </span>
+            </p>
+            </p>
+          </div>
+        </div>
+
+
+        <div th:if="${item.highlight == null and item._source.getCategory() == '행안부 파일'}">
+          <!--        <p th:text="${item._source.getCategory()}"></p>-->
+          <p th:each="itemNameOrg : ${item._source._file}">
+          <span th:if="${itemNameOrg != null}">
+              <span th:if="${itemNameOrg.getNameOrg() != null}">
+                  <span th:if="${#strings.endsWith(itemNameOrg.getNameOrg(), '.hwp') or #strings.endsWith(itemNameOrg.getNameOrg(), '.pdf')}">
+                      <span th:remove="tag" th:text="${itemNameOrg.getNameOrg()}"></span>
+                      <div style="border: solid 1px brown; margin-bottom: 20px;">
+                          <!-- 파일내용 하이라이트 X -->
+                          <span th:utext="${#strings.abbreviate(item._source._file[0].content, 350)}"></span>
+                      </div>
+                  </span>
+              </span>
+          </span>
+          </p>
+        </div>
+
+        <!-- 이미지 -->
+        <!-- 연합뉴스 -->
+        <!--      <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">-->
+        <!--        &lt;!&ndash; 이미지 URL을 세 번 연속 쉼표로 분할하여 여러 개의 URL을 가져옴 &ndash;&gt;-->
+        <!--        <th:block th:each="url : ${#strings.arraySplit(item._source.getFile_src(item._source.getFile_src()), ',,,')}">-->
+        <!--          &lt;!&ndash; 쉼표 이전까지의 URL을 추출하여 사용 &ndash;&gt;-->
+        <!--          <th:block th:if="${url != null}">-->
+        <!--            <img th:src="${url}" alt="Image" style="height: 200px;">-->
+        <!--          </th:block>-->
+        <!--        </th:block>-->
+        <!--      </div>-->
+        <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">
+          <img th:if="${item._source.file_src != null and item._source.file_src.contains(',')}"
+               th:src="${item._source.file_src.substring(0, item._source.file_src.indexOf(','))}"
+               alt="Image" style="height: 200px;">
+          <img th:if="${item._source.file_src == null or not item._source.file_src.contains(',')}"
+               th:src="${item._source.file_src}" alt="Image" style="height: 200px;">
+        </div>
+
+        <div th:if="${item._source.category == '행안부 이미지'}">
+          <img th:src="${item._source._file[0].path}" style="height: 200px;">
+        </div>
+
+
+
+
+        <!-- 작성자 | 작성일 -->
+        <div>
+          <span>-- </span><span th:text="${item._source.category}"></span>&nbsp;<span th:text="${item._source.author}"></span>&nbsp;<span th:text="${item._source.wdate}"></span>
+        </div>
+
+      </div>
+
+
+
+
+      <br/><br/>
+
+      <!-- Pagination Logic -->
+      <!-- 동적 할당 하기 위해서 지역변수 선언 -->
+      <div th:with="choice=${searchparameter.choice}, search=${searchparameter.search}, target=${searchparameter.target}">
+        <!-- 파지네이션 -->
+        <nav aria-label="Page navigation" th:if="${totalPages > 0}">
+          <ul class="pagination justify-content-center">
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Previous" onclick="goToFirstPage(event)">
+                <span aria-hidden="true">&laquo;</span>
+                <span class="sr-only">First</span>
+              </a>
             </li>
-          </th:block>
-          <li class="page-item">
-          <a class="page-link" href="#" aria-label="Next" onclick="goToNext(event)">
-            <span class="sr-only">Next</span>
-            <span aria-hidden="true">></span>
-          </a>
-          </li>
-          <li class="page-item">
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Previous" onclick="goToPrev(event)">
+                <span aria-hidden="true"><</span>
+                <span class="sr-only">Previous</span>
+              </a>
+            </li>
+            <!-- 페이지 링크를 동적으로 생성 -->
+            <!-- 현재 페이지 그룹 계산 -->
+            <th:block th:with="currentPageGroup=${(searchparameter.page - 1) / 10}">
+              <li class="page-item" th:each="page : ${#numbers.sequence((currentPageGroup * 10) + 1, (currentPageGroup * 10) + 10)}"
+                  th:if="${page} &lt;= ${totalPages}">
+                <a class="page-link" href="#" th:text="${page}" onclick="goToPage(this.innerText)"></a>
+              </li>
+            </th:block>
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Next" onclick="goToNext(event)">
+                <span class="sr-only">Next</span>
+                <span aria-hidden="true">></span>
+              </a>
+            </li>
+            <li class="page-item">
 
-            <a class="page-link" href="#" aria-label="Next" onclick="goToLastPage(this.getAttribute('data-total-pages'))" th:data-total-pages="${totalPages}">
-              <span class="sr-only">End</span>
-              <span aria-hidden="true">&raquo;</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
+              <a class="page-link" href="#" aria-label="Next" onclick="goToLastPage(this.getAttribute('data-total-pages'))" th:data-total-pages="${totalPages}">
+                <span class="sr-only">End</span>
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </div>
 
+    <div th:if="${isBanned}" > <!-- 금칙어 포함여부 True인경우 -->
+      <br/><br/>
+      <h4 style="text-align: center">다음과 같은 금칙어를 포함된 결과를 진행하셨습니다.</h4>
+      <p th:text="${bankeyword_forbidden}" style="text-align: center"></p> <!-- 어떤 금칙어들이 전달되었는지 확인 -->
+    </div>
 
   </div>
 
-  <div th:else>
-<!--     <h3 th:if="${searchparameter.search != }"> 검색된 항목이 없습니다. </h3>-->
   </div>
+
 
 <!--  <p th:text="${searchparameter.page}"></p>-->
 <!--  <p th:text="${searchparameter.search}"></p>-->
 
 
 <!--  <p th:text="${data.hits.hits[0]._source.title}"></p>-->
-
+</div>
 
 
 
@@ -402,15 +1196,44 @@
 
 <script type="text/javascript">
 
+  $(document).ready(function () {
+    // 인기 검색어 조회
+    $.ajax({
+      type: "GET",
+      url: "getTopKeywordList",
+      success: function (response) {
+        $("#topKeywordsList").css("display", "inline"); // 인기 검색어 목록 보이도록 설정
+        $.each(response, function(index, keyword) {
+          var listItem = '<li class="list-group-item justify-content-between align-items-center" style="max-width: 230px;">' +
+                  '<div class="d-flex">' +
+                  '<span style="font-weight: bold">"' +
+                  '<a onclick="setAndSearch(\'' + keyword.key + '\')" style="cursor: pointer">' +
+                  '<span class="truncate-text">' + keyword.key + '</span>' +
+                  '</a>"</span>&nbsp;' +
+                  '<span style="font-weight: bold">' +
+                  '<span style="font-weight: bold">' + keyword.doc_count + '</span>&nbsp;' +
+                  '<span>회</span>' +
+                  '</div></li>';
+          $("#topKeywordsList ul").append(listItem);
+        });
+      },
+      error: function (error) {
+        console.error("Error fetching data:", error);
+      }
+    });
+  });
+
   // const timestamp = `[${new Date().toUTCString()}]`;
   var search = document.querySelector('#searchparam');
   var choice = document.getElementById('choice').value;
   var target = document.getElementById('targetHidden').value;
   var category = document.getElementById('categoryHidden').value;
-  document.getElementById("categoryInnerLine").innerText = category;
+  // document.getElementById("categoryInnerLine").innerText = category;
   var research = document.getElementById('flexSwitchCheckDefault').checked;
   var period = document.getElementById('period_of_viewHidden').value;
   document.getElementById("periodInnerLine").innerText = period;
+  // var prevSearch = document.getElementById('prevSearchHidden').value;
+
 
 
   // console.log(research, timestamp);
@@ -426,14 +1249,21 @@
 
   function setCategoryValue(value) {
     category = value;
-
-    document.getElementById("categoryInnerLine").innerText = category;
+    // document.getElementById("categoryInnerLine").innerText = category;
   }
 
   function setChoice(value) {
     // alert("on here!!");
     choice = value;
   }
+
+  // 자동완성 비동기
+  function setAndSearch(value) {
+    // alert("setAndSearch" + value);
+    search = value;
+    SearchNameTag(search);
+  }
+
   function SearchOption() {
     if (research == undefined){
       research = false;
@@ -444,9 +1274,11 @@
     // alert(choice);
 
     if (research == false){
+      var prevSearch = document.getElementById('searchHidden').value;
+      // alert(prevSearch);
       var searchValue = encodeURIComponent(search.value);
       // alert(period);
-      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research + "&category=" + category + "&query=" + searchValue + "&period_of_view=" + period;
+      window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + searchValue + "&target=" + target + "&research=" + research + "&category=" + category + "&query=" + searchValue + "&period_of_view=" + period + "&prevSearch=" + prevSearch;
     } else {
       var originSearch = document.getElementById('searchHidden').value;
       var searchValue = encodeURIComponent(search.value);
@@ -454,11 +1286,13 @@
       var searchwordRegex = /\[ReDiscover\(searchword=(.*?)\)\]/;
       var matches = receivedData.match(searchwordRegex);
       var searchwords = matches ? matches[1].split(',') : [];
+      var prevSearch = document.getElementById('searchHidden').value;
+      // alert(prevSearch);
       // alert(period);
 
       // console.log("추출된 검색어들: ", searchwords);
 
-      var url = "/searchlist?page=1&choice=" + choice + "&search=" + encodeURIComponent(originSearch) + "&target=" + target + "&research=" + research + "&searchword=" + encodeURIComponent(search.value) + "&query=" + searchValue;
+      var url = "/searchlist?page=1&choice=" + choice + "&search=" + encodeURIComponent(originSearch) + "&target=" + target + "&research=" + research + "&searchword=" + encodeURIComponent(search.value) + "&query=" + searchValue +"&prevSearch=" + prevSearch;
 
       for (var i = 0; i < searchwords.length; i++) {
         url += "&searchword=" + encodeURIComponent(searchwords[i]);
@@ -471,6 +1305,26 @@
       window.location.href = url;
     }
   }
+
+  function SearchNameTag(INTENT) {
+    var prevSearch = document.getElementById('searchHidden').value;
+    var encodedIntent = encodeURIComponent(INTENT); // 인코딩된 INTENT 값 생성
+
+
+    // alert(prevSearch);
+    // alert("SearchNameTag" + INTENT);
+    window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + encodedIntent + "&target=" +target + "&research=false" + "&category=" + category + "&query=" + encodedIntent + "&period_of_view=0" + "&prevSearch=" + prevSearch;
+    // window.location.href = "/searchlist?page=1&choice=accuracyorderby&search="+INTENT+"&target=getall&research=false&category=전체&query="+INTENT+"&period_of_view=0"+"&prevSearch=" + prevSearch;
+  }
+
+  function SelectNavMenu(category) {
+    var prevSearch = document.getElementById('searchHidden').value;
+    var searchValue = encodeURIComponent(search.value);
+    // alert(search);
+    // alert(searchValue);
+    window.location.href = "/searchlist?page=1&choice=" + choice + "&search="+ searchValue + "&target=" + target +  "&research=false&category=" + category + "&query=" + searchValue +"&period_of_view=0" + "&prevSearch=" + prevSearch;
+  }
+
 
   function AutoComplete(){
     var searchValue = document.getElementById("searchparam").value;
@@ -612,6 +1466,20 @@
     period = value;
     console.log(period)
 
+    // const dropdownDateButton = document.getElementById("dropdownDateButton");
+
+    // dropdownDateButton.addEventListener("change", function() {
+      // const selectedValue = dropdownDateButton.value;
+      // alert(selectedValue);
+
+      if (period === "직접선택") {
+        showDirectInput();
+      } else {
+        hideDirectInput();
+        periodInnerLineText.style.display = 'none';
+      }
+    // });
+
     if(period == 0){
       document.getElementById("periodInnerLine").innerText = "전체 기간";
     }
@@ -621,8 +1489,10 @@
   }
 
   function showDirectInput() {
+    period = 0;
     var directInputDiv = document.getElementById("directInput");
     directInputDiv.style.display = "block";
+    periodInnerLineText.style.display = "inline";
   }
 
   function setDirectInputValue() {
@@ -665,6 +1535,91 @@
     const contentDiv = event.target.querySelector('.content-box');
     contentDiv.classList.toggle('hidden');
   }
+
+
+
+
+
+
+  // 로딩끝나면 비동기로 값 가져오기.
+  $(window).on("load", function() {
+    // 현재 URL에서 쿼리 파라미터 추출
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryFromURL = urlParams.get('query');
+    const prevFromURL = urlParams.get('prevSearch');
+    const researchFromURL = urlParams.get('research');
+
+
+
+    // 오타교정
+    $.ajax({
+      type: "GET",
+      url: "getTypoSuggest",
+      data: { search: queryFromURL }, // 추출한 쿼리 파라미터 값을 사용
+      success: function (response) {
+        if (response !== null && response !== "") {
+          $("#typoSuggest").val(response);
+          displayResults(response);
+        }
+      },
+      error: function (error) {
+        console.error("Error fetching data:", error);
+      }
+    });
+
+    // 수동추천 리스트
+    $.ajax({
+      type: "GET",
+      url: "getManualRecommendation",
+      data: { search: queryFromURL },
+      success: function (response) {
+        if (response !== null && response !== "") {
+          if (response.recomm !== null && response.recomm.length > 0) {
+            $("p#recommList").append('<span>해당 검색어는 어떠신가요?(사용자지정 수동)</span> <br/>');
+            var recommHtml = ""; // 추천 리스트를 담을 변수 초기화
+            $.each(response.recomm, function(index, recommendation) {
+              recommHtml += '<a onclick="setAndSearch(\'' + recommendation + '\')" style="font-size: 15px; font-weight: bold; cursor: pointer;">' + recommendation + '</a>&nbsp;';
+            });
+            $("p#recommList").append(recommHtml); // 추천 리스트 추가
+          }
+        }
+      },
+      error: function (error) {
+        console.error("Error fetching data:", error);
+      }
+    });
+
+    // 자동추천 리스트
+    $.ajax({
+      type: "GET",
+      url: "getAutoRecommendation",
+      data: { search: queryFromURL, prevSearch: prevFromURL, isResearch: researchFromURL },
+      success: function (response) {
+        if (response !== null && response.length > 0) {
+          var autoRecommHtml = "";
+            autoRecommHtml += '<span>다음과 같이 검색 해보시는건 어떠신가요?(로그기반 자동)</span> <br/>';
+          $.each(response, function(index, item) {
+            autoRecommHtml += '<a onclick="setAndSearch(\'' + item + '\')" style="font-size: 15px; font-weight: bold; cursor: pointer;">' + item + '</a>&nbsp;&nbsp;&nbsp;';
+          });
+          $("#autoRecommList").html(autoRecommHtml);
+        }
+      },
+      error: function (error) {
+        console.error("Error fetching data:", error);
+      }
+    });
+
+
+  });
+
+  function displayResults(typoSuggest) {
+    $("#resultText").show();
+    $("#resultLink").show();
+    $("#resultLink span").text(typoSuggest);
+    $("#resultLink").attr("onclick", `setAndSearch('${typoSuggest}')`);
+  }
+
+
 
 
 
