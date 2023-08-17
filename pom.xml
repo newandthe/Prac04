@@ -54,6 +54,12 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.11.0</version>
+		</dependency>
+
 		<!-- HikariCP: 데이터베이스 커넥션 풀링을 위한 HikariCP 의존성 -->
 		<dependency>
 			<groupId>com.zaxxer</groupId>
@@ -133,6 +139,8 @@
 
 
 
+
+
 	</dependencies>
 
 	<build>
@@ -148,7 +156,7 @@
 						</exclude>
 					</excludes>
 				</configuration>
-			</plugin>
+			</plugin><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><configuration><source>8</source><target>8</target></configuration></plugin>
 		</plugins>
 	</build>
 	<repositories>

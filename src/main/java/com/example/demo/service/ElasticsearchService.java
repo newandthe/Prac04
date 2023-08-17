@@ -33,15 +33,23 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms.ParsedBucket;
+
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+
 
 @Service
 public class ElasticsearchService {
@@ -62,15 +70,19 @@ public class ElasticsearchService {
 
 
     // 전체 쿼리 처리
-    public ArticleEnt sampleQuery(RequestParam requestParam) throws IOException {
+    public ArticleEnt mainQuery(RequestParam requestParam) throws IOException {
         if (requestParam.getSearch().trim().equals("")) {         // 처음 입장 및 빈칸 검색 시 인덱스 GET
-            ArticleEnt art = new ArticleEnt();  // hits = null 인 객체 생성해서 반환
+            ArticleEnt art;  // 전체 검색 반환으로.. GET ALL
+            if(requestParam.getCategory().equals("전체")){         // 전체 카테고리검색에 search가 없을 경우 Aggs결과 반환
+                art = getAllCategorySearch();
+            } else {                                              // 전체가아닌 상세 카테고리를 빈칸으로 검색한 경우
+                art = getEmptySearch(requestParam);
+            }
             return art;
         }
 
         // 검색어 + - "" ( 포함 제외 정확히 일치 파싱해서 배열 형태로 모두 반환 ) (Utility의 SearchParser 클래스)
-        searchParsedEntity searchedpEnt;
-        searchedpEnt = SearchParser.searchParsing(requestParam);
+        searchParsedEntity searchedpEnt = SearchParser.searchParsing(requestParam);
 
 
         init();
@@ -116,11 +128,10 @@ public class ElasticsearchService {
                     stringBuilder.append(mustWord);
                 }
                 need_search = stringBuilder.toString();
-                multiMatchQuery.must();
-                multiMatchQuery.should(QueryBuilders.matchQuery("title", need_search).operator(Operator.AND))
-                        .should(QueryBuilders.matchQuery("content", need_search).operator(Operator.AND))
-                        .should(QueryBuilders.matchQuery("_file.nameOrg", need_search).operator(Operator.AND))
-                        .should(QueryBuilders.matchQuery("_file.content", need_search).operator(Operator.AND));
+
+                multiMatchQuery.must(QueryBuilders.multiMatchQuery(need_search, "title", "content", "_file.nameOrg", "_file.content")
+                        .operator(Operator.AND)
+                        .minimumShouldMatch("1"));
             }
 
             if (searchedpEnt.getMust_not().length > 0 || ban.isBanned_stopword()) {
@@ -139,10 +150,8 @@ public class ElasticsearchService {
 
 
                 need_search = stringBuilder.toString();
-                multiMatchQuery.mustNot(QueryBuilders.matchQuery("title", need_search).operator(Operator.OR))
-                        .mustNot(QueryBuilders.matchQuery("content", need_search).operator(Operator.OR))
-                        .mustNot(QueryBuilders.matchQuery("_file.nameOrg", need_search).operator(Operator.OR))
-                        .mustNot(QueryBuilders.matchQuery("_file.content", need_search).operator(Operator.OR));
+                multiMatchQuery.mustNot(QueryBuilders.multiMatchQuery(need_search, "title", "content", "_file.nameOrg", "_file.content")
+                        .operator(Operator.OR));
             }
 
             if (searchedpEnt.getMatch_pharse().length > 0) {
@@ -158,30 +167,9 @@ public class ElasticsearchService {
         }   // 전체 검색의 끝 ..
 
 
-        // 전체 검색이아니라면 .. // 깔끔하게하려면 검색로직 함수로 빼내서 호출하도록 ....
+        // 전체 검색이아니라면 .. /
         else {
-            String etc = "";
-//        System.out.println(etc);
-            switch (requestParam.getTarget()) {
-                case "gettitle":
-                    etc = "title";
-                    break;
-                case "getcontent":
-                    etc = "content";
-                    break;
-                case "getfilename":
-                    etc = "_file.nameOrg";
-                    break;
-                case "getfilecontent":
-                    etc = "_file.content";
-                    break;
-                default:
-                    System.out.println("switch ERROR");
-                    break;
-            }
-
-
-
+            String etc = getEtcField(requestParam.getTarget());
 
             stringBuilder.setLength(0); // 스트링 빌더 초기화
             for (int i = 0; i < searchedpEnt.getMust().length; i++) {
@@ -193,11 +181,14 @@ public class ElasticsearchService {
                 stringBuilder.append(mustWord);
             }
             need_search = stringBuilder.toString();
-            multiMatchQuery.should(QueryBuilders.matchQuery(etc, need_search).operator(Operator.AND));
+
+            multiMatchQuery.must(QueryBuilders.boolQuery()
+                    .should(QueryBuilders.matchQuery(etc, need_search).operator(Operator.AND))
+                    .minimumShouldMatch(1));
 
             if (searchedpEnt.getMust_not().length > 0 || ban.isBanned_stopword()) {
                 stringBuilder.setLength(0); // 스트링 빌더 초기화
-                BoolQueryBuilder mustNotQuery = QueryBuilders.boolQuery();
+//                BoolQueryBuilder mustNotQuery = QueryBuilders.boolQuery();
                 for (int i = 0; i < searchedpEnt.getMust_not().length; i++) {
                     String mustNotWord = searchedpEnt.getMust_not()[i];
 
@@ -226,31 +217,29 @@ public class ElasticsearchService {
 
         }   // 전체검색이 아닌경우의 끝 ..
 
-
-
-//        System.out.println("TEST!!!!!!!!!!! IS HERE ?");
-//        System.out.println(requestParam.isResearch());
-//        System.out.println(requestParam.getReDiscoverArr());
-
-
         // post_filter 필터링 (재검색 존재 하는 경우)
-        BoolQueryBuilder outerBoolQuery = null;
         // 재 검색이 true 라면 && 재 검색의 리스트 배열이 null 이 아닌 경우
+        BoolQueryBuilder outerBoolQuery = null;
+
         if (requestParam.isResearch() && requestParam.getReDiscoverArr() != null) {
-
+            stringBuilder.setLength(0); // 스트링 빌더 초기화
             BoolQueryBuilder postFilter = QueryBuilders.boolQuery();
+
             for (int i = 0; i < requestParam.getReDiscoverArr().size(); i++) {
-                String searchword = requestParam.getReDiscoverArr().get(i).getSearchword();
-                BoolQueryBuilder innerBoolQuery = QueryBuilders.boolQuery()
-                        .should(QueryBuilders.matchQuery("title", searchword).operator(Operator.AND))
-                        .should(QueryBuilders.matchQuery("content", searchword).operator(Operator.AND))
-                        .should(QueryBuilders.matchQuery("_file.nameOrg", searchword).operator(Operator.AND))
-                        .should(QueryBuilders.matchQuery("_file.content", searchword).operator(Operator.AND));
+                String searchWord = requestParam.getReDiscoverArr().get(i).getSearchword();
 
-                postFilter.must(innerBoolQuery);
-
-                outerBoolQuery = QueryBuilders.boolQuery().must(postFilter);
+                if (i > 0) {
+                    stringBuilder.append(" "); // 첫 단어 이후 단어마다 한칸 씩 띄어서 저장.
+                }
+                stringBuilder.append(searchWord);
             }
+            need_search = stringBuilder.toString();
+            MultiMatchQueryBuilder multiMatchQuery_postFilter = QueryBuilders.multiMatchQuery(need_search, "title", "content", "_file.nameOrg", "_file.content")
+                    .operator(Operator.AND);
+
+            postFilter.should(multiMatchQuery_postFilter);
+
+            outerBoolQuery = QueryBuilders.boolQuery().must(postFilter);
         }
 
         // 정렬 쿼리 빌더 생성
@@ -294,39 +283,21 @@ public class ElasticsearchService {
 
         // 쿼리 결합
         BoolQueryBuilder finalQuery = QueryBuilders.boolQuery()
-//                .must(categoryQuery)  // filter로 빠지기
                 .must(multiMatchQuery);
         if(requestParam.isResearch() && requestParam.getReDiscoverArr() != null){ finalQuery.must(outerBoolQuery);}
         if(!requestParam.getPeriod_of_view().equals("0") || !requestParam.getCategory().equals("전체")){  // 카테고리나 기간 필터 둘중 하나라도있으면 쿼리 생성
             finalQuery.filter(filterQuery);
         }
 
-        // 정렬 쿼리까지 적용
+        // 정렬 쿼리 적용
         searchSourceBuilder.query(finalQuery).sort(updatedAtSort);
 
-        searchSourceBuilder.size(20);    // 페이지당 5개씩 출력
+        searchSourceBuilder.size(20);    // 페이지당 20개씩 출력
         searchSourceBuilder.from((requestParam.getPage() - 1) * 5);   // Pagination을 위한 "from"
 
         System.out.println("requestParam : " + requestParam);
 
-
-
-        // HighlightBuilder를 사용한 하이라이팅 설정 ( 검색에서 어디가 일치해 도출 된건지 강조 표시 (bold, color, line) )
-        HighlightBuilder highlightBuilder = new HighlightBuilder();
-        highlightBuilder.preTags("<span style='color:red;'><b><u>");
-        highlightBuilder.postTags("</u></b></span>");
-
-//        if(requestParam.getTarget().equals("getall") || requestParam.equals("gettitle")) {
-        highlightBuilder.field("title").highlighterType("plain");
-//        } else if (requestParam.getTarget().equals("getall") || requestParam.equals("getcontent")) {
-        highlightBuilder.field("content").highlighterType("plain");
-//        } else if (requestParam.getTarget().equals("getall") || requestParam.equals("getfilecontent")) {
-        highlightBuilder.field("_file.content").highlighterType("plain");
-//        } else if (requestParam.getTarget().equals("getall") || requestParam.equals("getfilename")) {
-        highlightBuilder.field("_file.nameOrg").highlighterType("plain");
-//        }
-        highlightBuilder.fragmentSize(300);
-        searchSourceBuilder.highlighter(highlightBuilder);
+        searchSourceBuilder.highlighter(createHighlightBuilder());
 
         SearchRequest searchRequest = new SearchRequest(INDEX)
                 .source(searchSourceBuilder);
@@ -344,29 +315,119 @@ public class ElasticsearchService {
 
 
         crawlLog(requestParam, art.getHits().getTotal().getValue(), art.getTook());     // 검색로그 저장
-//        System.out.println(art.getHits().getTotal().getValue());  // value 값
-//        System.out.println(art.getTook());  // took 값
 
         // 냉장고를 (sodwkdrh)로 잘못 입력한 경우 => "냉장고"로 return ( 검색결과가 없는 경우 && 오직 영어로만 검색어가 정해진 경우 )
         if (IsOnlyEnglish.isEnglishString(requestParam.getSearch()) && art.getHits().getHits().length == 0) {
 //            System.out.println(EngToKor.engToKor(requestParam.getSearch()));
             requestParam.setSearch(EngToKor.engToKor(requestParam.getSearch()));  // 오타 가능성이 있는 영문을 한글로 바꾸어 다시 검색
             requestParam.setQuery(requestParam.getSearch());    // 영문검색을 다시 한글로 변환
-            art = sampleQuery(requestParam);
+            art = mainQuery(requestParam);
         }
+
+
 
         return art;
     }
 
+    // 전체 카테고리 Aggs 반환
+    private ArticleEnt getAllCategorySearch() throws IOException {
+        init();
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+        sourceBuilder.size(0);
+
+        TermsAggregationBuilder termsAggregation = AggregationBuilders.terms("categories")
+                .field("category").size(15)
+                .subAggregation(AggregationBuilders.topHits("top_documents").size(5));
+
+        sourceBuilder.aggregation(termsAggregation);
+
+        SearchRequest searchRequest = new SearchRequest("jsk_index");
+//        System.out.println("전체 카테고리 요청!");
+//        System.out.println(searchRequest);
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+//        System.out.println("전체카테고리 응답!");
+//        System.out.println(searchResponse);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);   // 없는필드는 매핑 X
+        JsonNode jsonNode = objectMapper.readTree(String.valueOf(searchResponse));
+        ArticleEnt art = objectMapper.treeToValue(jsonNode, ArticleEnt.class);
+
+//        System.out.println("전체카테고리!");
+//        System.out.println(art);
+
+        return art;
+    }
+
+    private String getEtcField(String target) {
+        String etc = "";
+        switch (target) {
+            case "gettitle":
+                etc = "title";
+                break;
+            case "getcontent":
+                etc = "content";
+                break;
+            case "getfilename":
+                etc = "_file.nameOrg";
+                break;
+            case "getfilecontent":
+                etc = "_file.content";
+                break;
+            default:
+                System.out.println("switch ERROR");
+                break;
+        }
+        return etc;
+    }
+
+    private ArticleEnt getEmptySearch(RequestParam requestParam) throws IOException {
+
+        init();
+        QueryBuilder query;
+        if ("전체".equals(requestParam.getCategory())) {
+            query = QueryBuilders.matchAllQuery();
+        } else {
+            query = QueryBuilders.matchQuery("category", requestParam.getCategory());
+        }
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.trackTotalHits(true);   // default: hits 1만건 초과 -> value 1만개 고정.. 따라서 default "해제"
+        sourceBuilder.query(query);
+        sourceBuilder.size(20); // 페이지당 20개씩 출력
+        sourceBuilder.from((requestParam.getPage() - 1) * 20); // Pagination을 위한 "from"
+        sourceBuilder.highlighter(createHighlightBuilder());
+
+        SearchRequest searchRequest = new SearchRequest(INDEX).source(sourceBuilder);
+
+        System.out.println("Search Request: " + searchRequest); // 요청쿼리 출력
+
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            JsonNode jsonNode = objectMapper.readTree(searchResponse.toString());
+            ArticleEnt art = objectMapper.treeToValue(jsonNode, ArticleEnt.class);
+
+
+
+
+//        System.out.println(art);
+        return art;
+    }
 
 
     // 결과내 재검색 시 ArrayList에 add 로직
-    public RequestParam researchClear(RequestParam requestParam, ReDiscover reDiscover) {
+    public RequestParam reSearchClear(RequestParam requestParam, ReDiscover reDiscover) {
 //        System.out.println("다음은 reDiscoverArr add 로직");
 //        System.out.println("requestParam" + requestParam);
 //        System.out.println("reDiscover" + reDiscover);
+//        requestParam = setPrevSearch(requestParam); // 이전검색어 지정
 
-        if (requestParam.isResearch()) {
+        if (requestParam.isResearch()) {    // 결과내 재 검색이 True인경우
 //            System.out.println("flag1");
             ArrayList<ReDiscover> reDiscovers;
             if (requestParam.getReDiscoverArr() == null) {
@@ -379,12 +440,25 @@ public class ElasticsearchService {
 //            System.out.println("flag4: " + reDiscovers);
             reDiscovers.add(reDiscover);
             requestParam.setReDiscoverArr(reDiscovers);
-        } else {
+        } else {    // 결과내 재검색 아닌 경우 재검색 List 초기화
             requestParam.setReDiscoverArr(null);
         }
 //        System.out.println("다음은 return 값" + requestParam);
 
         return requestParam;
+    }
+
+    private HighlightBuilder createHighlightBuilder() {
+        HighlightBuilder highlightBuilder = new HighlightBuilder();
+        highlightBuilder.preTags("<span style='color:red;'><b><u>");
+        highlightBuilder.postTags("</u></b></span>");
+        highlightBuilder.field("title").highlighterType("plain");
+        highlightBuilder.field("content").highlighterType("plain");
+        highlightBuilder.field("_file.content").highlighterType("plain");
+        highlightBuilder.field("_file.nameOrg").highlighterType("plain");
+        highlightBuilder.fragmentSize(300);
+//        highlightBuilder.requireFieldMatch(false); //
+        return highlightBuilder;
     }
 
 
@@ -461,7 +535,9 @@ public class ElasticsearchService {
                     .field("sort", sort)
                     .field("took", took)
                     .field("total", hit_total)
-                    .field("user", extractedUsername);
+                    .field("user", extractedUsername)
+                    .field("prevSearch",requestParam.getPrevSearch());
+
                     if(requestParam.getReDiscoverArr() == null){
                         builder.field("rediscoverarr", (Boolean) null);
                     } else {
@@ -475,7 +551,6 @@ public class ElasticsearchService {
                         StringBuilder getparseBuilder = new StringBuilder();
 
                         while (matcher.find()) {
-                            System.out.println("is THERE");
                             String extractedValue = matcher.group(1);
                             if (getparseBuilder.length() > 0) {
                                 getparseBuilder.append(", ");  // 이미 내용이 있는 경우 쉼표와 공백 추가
@@ -496,8 +571,6 @@ public class ElasticsearchService {
                     builder.endObject();
 
 
-//            System.out.println("builder!!!!!");
-//            System.out.println(builder);
             // IndexRequest 객체 생성 및 JSON 문서 추가
             IndexRequest indexRequest = new IndexRequest("search-log") // 인덱스 이름
                     .source(builder);
@@ -533,8 +606,6 @@ public class ElasticsearchService {
 
         // 쿼리 실행
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-
-//        System.out.println(searchResponse);
 
         // 집계 결과 처리
         Terms termsAggregation = searchResponse.getAggregations().get("popular_search_terms");
@@ -586,13 +657,15 @@ public class ElasticsearchService {
         return result;
     }
 
+
+    // Pagination
     public int getTotalPages(String value, int pagesize) {
 
         return (int) Math.ceil(Double.parseDouble(value) / pagesize);
     }
 
     public String typoCorrect(String search) throws IOException {
-        if(search.isEmpty() == true){
+        if(search.isEmpty() == true || search == null){
             return null;
         }
         System.out.println("검색어: " + search);
@@ -600,26 +673,34 @@ public class ElasticsearchService {
 
         SuggestBuilder suggestBuilder = new SuggestBuilder().addSuggestion("mySuggestion", SuggestBuilders.termSuggestion("keyword.suggest").text(search));
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().suggest(suggestBuilder);
-        SearchRequest searchRequest = new SearchRequest("iosearch-typocorrect-dict");
+        SearchRequest searchRequest = new SearchRequest("typocorrect-dict");
         searchRequest.source(sourceBuilder);
+//        System.out.println(searchRequest);
 
         SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-//        System.out.println(searchResponse);
         Suggest suggest = searchResponse.getSuggest();
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = objectMapper.readTree(suggest.toString());
 
         JsonNode mySuggestions = jsonNode.get("suggest").get("mySuggestion");
         JsonNode lastMySuggestion = mySuggestions.get(mySuggestions.size() - 1);
-        JsonNode options = lastMySuggestion.get("options");
+        JsonNode options;
+        try {
+            options = lastMySuggestion.get("options");
+        } catch (NullPointerException e){
+            return null;
+        }
 //        System.out.println(options.size());
         if(options.size() == 0){    // 오타제안이 없다면 (검색결과가 존재한다면) null Return
             return null;
         }
+        System.out.println("JsonNode : " + options);
         String lastOptionText = options.get(0).get("text").asText();
         System.out.println("오타교정 : " + lastOptionText);
+        String normalizedText = Normalizer.normalize(lastOptionText, Normalizer.Form.NFC);
 
-        return lastOptionText;      // 오타 교정 제안이 있다면 해당 String Return (option 마지막 인덱스의 Score가 가장 높은 String)
+
+        return normalizedText;      // 오타 교정 제안이 있다면 해당 String Return (option 마지막 인덱스의 Score가 가장 높은 String)
     }
 
     public RecommManual recommManualGet(String search) throws IOException { // 수동 추천 검색어
@@ -671,7 +752,7 @@ public class ElasticsearchService {
     public BanString isBannedSearch_Forbidden(String search) throws IOException {
 
         init();
-        SearchRequest searchRequest = new SearchRequest("iosearch-forbiddenword-dict");
+        SearchRequest searchRequest = new SearchRequest("forbiddenword-dict");
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchQuery("keyword", search));
         searchRequest.source(searchSourceBuilder);
@@ -720,43 +801,80 @@ public class ElasticsearchService {
 
     }
 
-    public String autoRecomm(String search) throws IOException {   // 자동 추천 검색어 (String 형태로)
+    public List<String> autoRecomm(String search, String prevSearch, boolean isResearch) throws IOException {   // 자동 추천 검색어 (String 형태로)
 
         init();
-        SearchRequest searchRequest = new SearchRequest("iosearch-search-log-000001");  // 로그 기반
+        SearchRequest searchRequest = new SearchRequest("search-log");  // 로그 기반
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 
-        // Query
-        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        boolQuery.must(QueryBuilders.matchQuery("search", search));
-        boolQuery.must(QueryBuilders.matchQuery("re", true));
-        searchSourceBuilder.query(boolQuery);
+        if(isResearch){
+            // Query
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            boolQuery.must(QueryBuilders.matchQuery("search", search));
+            boolQuery.must(QueryBuilders.matchQuery("re", true));
+            searchSourceBuilder.query(boolQuery);
 
-        // Aggregation
-        TermsAggregationBuilder termsAggregation = AggregationBuilders.terms("re_search_terms")
-                .field("rediscoverarr.keyword")
-                .size(1);
-        searchSourceBuilder.aggregation(termsAggregation);
+            // Aggregation
+            TermsAggregationBuilder termsAggregation = AggregationBuilders.terms("re_search_terms")
+                    .field("rediscoverarr.keyword")
+                    .size(1);
+            searchSourceBuilder.aggregation(termsAggregation);
 
-        // Size
-        searchSourceBuilder.size(0);
+            // Size
+            searchSourceBuilder.size(0);
 
-        searchRequest.source(searchSourceBuilder);
+            searchRequest.source(searchSourceBuilder);
 
-        System.out.println(searchRequest);
-        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-        ParsedStringTerms reSearchTerms = searchResponse.getAggregations().get("re_search_terms");
-        List<ParsedTerms.ParsedBucket> buckets = (List<ParsedTerms.ParsedBucket>) reSearchTerms.getBuckets();
+            System.out.println(searchRequest);
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+            ParsedStringTerms reSearchTerms = searchResponse.getAggregations().get("re_search_terms");
+            List<ParsedTerms.ParsedBucket> buckets = (List<ParsedTerms.ParsedBucket>) reSearchTerms.getBuckets();
 
-        if (!buckets.isEmpty()) {   // 로그 기반 자동추천 검색어 존재할 경우 ..
-            ParsedStringTerms.ParsedBucket firstBucket = (ParsedStringTerms.ParsedBucket) buckets.get(0);
-            String firstBucketKey = firstBucket.getKeyAsString();
-            System.out.println("First bucket key: " + firstBucketKey);
-            return firstBucketKey;
-        } else {
-            return null;    // 존재하지 않으면 프론트에서도 출력하지 않기 위해 null로 일단 전달 ..
+            if (!buckets.isEmpty()) {   // 로그 기반 자동추천 검색어 존재할 경우 ..
+                ParsedStringTerms.ParsedBucket firstBucket = (ParsedStringTerms.ParsedBucket) buckets.get(0);
+                String firstBucketKey = firstBucket.getKeyAsString();
+                List<String> res = new ArrayList<>(); // 리스트 초기화
+                res.add(firstBucketKey);
+                System.out.println("First bucket key: " + firstBucketKey);
+                return res;
+            } else {
+                Collections.emptyList();    // 존재하지 않으면 프론트에서도 출력하지 않기 위해 null로 일단 전달 ..
+            }
+        } else if (!search.equals("") && !prevSearch.equals("") || !(prevSearch == null)){
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            boolQuery.should(QueryBuilders.matchQuery("search", search)).should(QueryBuilders.matchQuery("prevSearch", prevSearch));
+            searchSourceBuilder.query(boolQuery);
+
+            // Aggregation
+            TermsAggregationBuilder termsAggregation = AggregationBuilders.terms("prevSearch")
+                    .field("search.keyword")
+                    .size(5); // Get top 5 previous search terms
+            searchSourceBuilder.aggregation(termsAggregation);
+
+            // Size
+            searchSourceBuilder.size(0);
+
+            searchRequest.source(searchSourceBuilder);
+
+
+            System.out.println(searchRequest);
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+            ParsedStringTerms prevSearchTerms = searchResponse.getAggregations().get("prevSearch");
+            List<ParsedBucket> buckets = (List<ParsedBucket>) prevSearchTerms.getBuckets();
+
+            List<String> recommendedSearchTerms = new ArrayList<>();
+
+            for (ParsedBucket bucket : buckets) {
+                String bucketKey = bucket.getKeyAsString();
+                recommendedSearchTerms.add(bucketKey);
+            }
+
+            return recommendedSearchTerms;
         }
+        return null;
     }
+
+
 
     public BanString isBannedSearch_StopWord(String search) throws IOException {
 
@@ -792,4 +910,5 @@ public class ElasticsearchService {
 
 
     }
+
 }
