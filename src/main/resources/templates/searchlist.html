@@ -45,7 +45,6 @@
     로그아웃
   </a>
 
-<!--  <img src="/data/download/08421c8462bca0de9886172cb655110ef22a921bc5ec34c46a33af1b0b302bab/08421c8462bca0de9886172cb655110ef22a921bc5ec34c46a33af1b0b302bab_0.jpg">-->
 
 
 
@@ -53,9 +52,7 @@
 
 </div>
 <hr />
-<!-- <p th:text="${totalPages}"></p><p>totalPages</p> -->
 <br/>
-<!-- <p th:text="${bbsList.size()}"></p><p>bbsList.size</p> -->
 
 <!-- Hidden input 요소 추가 -->
 <input type="hidden" id="targetHidden" th:value="${searchparameter.target}" />
@@ -63,9 +60,6 @@
 <input type="hidden" id="searchArr" th:value="${searchparameter.reDiscoverArr}" />
 <input type="hidden" id="categoryHidden" th:value="${searchparameter.category}" />
 <input type="hidden" id="period_of_viewHidden" th:value="${searchparameter.period_of_view}" />
-<!--<input type="hidden" id="typoSuggest" th:value="${typoSuggest}"/>-->
-<!--<input type="hidden" id="prevSearchHidden" th:value="${prevSearch}" />-->
-<!--<input type="hidden" id="autorecomm" th:value="${autorecomm}" />-->
 
 <div>
 
@@ -877,17 +871,6 @@
         </p>
       </div>
 
-    <!-- 이미지 -->
-      <!-- 연합뉴스 -->
-<!--      <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">-->
-<!--        &lt;!&ndash; 이미지 URL을 세 번 연속 쉼표로 분할하여 여러 개의 URL을 가져옴 &ndash;&gt;-->
-<!--        <th:block th:each="url : ${#strings.arraySplit(item._source.getFile_src(item._source.getFile_src()), ',,,')}">-->
-<!--          &lt;!&ndash; 쉼표 이전까지의 URL을 추출하여 사용 &ndash;&gt;-->
-<!--          <th:block th:if="${url != null}">-->
-<!--            <img th:src="${url}" alt="Image" style="height: 200px;">-->
-<!--          </th:block>-->
-<!--        </th:block>-->
-<!--      </div>-->
       <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">
         <img th:if="${item._source.file_src != null and item._source.file_src.contains(',')}"
              th:src="${item._source.file_src.substring(0, item._source.file_src.indexOf(','))}"
@@ -973,10 +956,6 @@
 
 
       <br/>
-      <!--    <p th:if="${typoSuggest != null}" style="font-size: 19px; font-weight: bold">혹시 찾으시는 결과가 이것은 아닌가요?</p>-->
-      <!--      <a th:attr="onclick='setAndSearch(\'' + ${typoSuggest} + '\')'">-->
-      <!--        <span th:if="${typoSuggest != null}" th:text="${typoSuggest}" style="font-size: 15px; font-weight: bold; cursor: pointer;"></span>-->
-      <!--      </a>-->
 
 
 
@@ -1086,17 +1065,6 @@
           </p>
         </div>
 
-        <!-- 이미지 -->
-        <!-- 연합뉴스 -->
-        <!--      <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">-->
-        <!--        &lt;!&ndash; 이미지 URL을 세 번 연속 쉼표로 분할하여 여러 개의 URL을 가져옴 &ndash;&gt;-->
-        <!--        <th:block th:each="url : ${#strings.arraySplit(item._source.getFile_src(item._source.getFile_src()), ',,,')}">-->
-        <!--          &lt;!&ndash; 쉼표 이전까지의 URL을 추출하여 사용 &ndash;&gt;-->
-        <!--          <th:block th:if="${url != null}">-->
-        <!--            <img th:src="${url}" alt="Image" style="height: 200px;">-->
-        <!--          </th:block>-->
-        <!--        </th:block>-->
-        <!--      </div>-->
         <div th:if="${item._source.file_src != null and item._source.category != '행안부 파일' and item._source.category != '행안부 이미지'}">
           <img th:if="${item._source.file_src != null and item._source.file_src.contains(',')}"
                th:src="${item._source.file_src.substring(0, item._source.file_src.indexOf(','))}"
@@ -1179,11 +1147,6 @@
   </div>
 
 
-<!--  <p th:text="${searchparameter.page}"></p>-->
-<!--  <p th:text="${searchparameter.search}"></p>-->
-
-
-<!--  <p th:text="${data.hits.hits[0]._source.title}"></p>-->
 </div>
 
 
@@ -1223,24 +1186,13 @@
     });
   });
 
-  // const timestamp = `[${new Date().toUTCString()}]`;
   var search = document.querySelector('#searchparam');
   var choice = document.getElementById('choice').value;
   var target = document.getElementById('targetHidden').value;
   var category = document.getElementById('categoryHidden').value;
-  // document.getElementById("categoryInnerLine").innerText = category;
   var research = document.getElementById('flexSwitchCheckDefault').checked;
   var period = document.getElementById('period_of_viewHidden').value;
   document.getElementById("periodInnerLine").innerText = period;
-  // var prevSearch = document.getElementById('prevSearchHidden').value;
-
-
-
-  // console.log(research, timestamp);
-
-  // console.log(target); // 초기화된 값 출력 (콘솔 확인용)
-  // console.log(search); // 초기화된 값 출력 (콘솔 확인용)
-  // console.log(choice); // 초기화된 값 출력 (콘솔 확인용)
 
   function setValue(value) {
     // console.log("Selected value: " + value);
@@ -1287,10 +1239,7 @@
       var matches = receivedData.match(searchwordRegex);
       var searchwords = matches ? matches[1].split(',') : [];
       var prevSearch = document.getElementById('searchHidden').value;
-      // alert(prevSearch);
-      // alert(period);
 
-      // console.log("추출된 검색어들: ", searchwords);
 
       var url = "/searchlist?page=1&choice=" + choice + "&search=" + encodeURIComponent(originSearch) + "&target=" + target + "&research=" + research + "&searchword=" + encodeURIComponent(search.value) + "&query=" + searchValue +"&prevSearch=" + prevSearch;
 
@@ -1311,8 +1260,6 @@
     var encodedIntent = encodeURIComponent(INTENT); // 인코딩된 INTENT 값 생성
 
 
-    // alert(prevSearch);
-    // alert("SearchNameTag" + INTENT);
     window.location.href = "/searchlist?page=1&choice=" + choice + "&search=" + encodedIntent + "&target=" +target + "&research=false" + "&category=" + category + "&query=" + encodedIntent + "&period_of_view=0" + "&prevSearch=" + prevSearch;
     // window.location.href = "/searchlist?page=1&choice=accuracyorderby&search="+INTENT+"&target=getall&research=false&category=전체&query="+INTENT+"&period_of_view=0"+"&prevSearch=" + prevSearch;
   }
@@ -1320,8 +1267,6 @@
   function SelectNavMenu(category) {
     var prevSearch = document.getElementById('searchHidden').value;
     var searchValue = encodeURIComponent(search.value);
-    // alert(search);
-    // alert(searchValue);
     window.location.href = "/searchlist?page=1&choice=" + choice + "&search="+ searchValue + "&target=" + target +  "&research=false&category=" + category + "&query=" + searchValue +"&period_of_view=0" + "&prevSearch=" + prevSearch;
   }
 
@@ -1466,11 +1411,6 @@
     period = value;
     console.log(period)
 
-    // const dropdownDateButton = document.getElementById("dropdownDateButton");
-
-    // dropdownDateButton.addEventListener("change", function() {
-      // const selectedValue = dropdownDateButton.value;
-      // alert(selectedValue);
 
       if (period === "직접선택") {
         showDirectInput();
