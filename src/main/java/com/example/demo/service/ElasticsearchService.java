@@ -129,9 +129,11 @@ public class ElasticsearchService {
                 }
                 need_search = stringBuilder.toString();
 
-                multiMatchQuery.must(QueryBuilders.multiMatchQuery(need_search, "title", "content", "_file.nameOrg", "_file.content")
+                multiMatchQuery.should(QueryBuilders.multiMatchQuery(need_search, "title", "content", "_file.nameOrg", "_file.content")
+                        .type(MultiMatchQueryBuilder.Type.MOST_FIELDS)
                         .operator(Operator.AND)
-                        .minimumShouldMatch("1"));
+//                        .minimumShouldMatch("1")
+                );
             }
 
             if (searchedpEnt.getMust_not().length > 0 || ban.isBanned_stopword()) {
